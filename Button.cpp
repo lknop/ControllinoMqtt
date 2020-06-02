@@ -57,16 +57,16 @@ void Button::onTick(EventArgs* e){
     byte readValue = digitalRead(_pin);
 	byte value = !(readValue ^ this->_pushedValue);
     EventArgs eClick(this);
-    if(this->devounceValue==0xFF && value==0) {
-        this->devounceValue = 0;
+    if(this->debounceValue==0xFF && value==0) {
+        this->debounceValue = 0;
         DEBUG_PRINT("CLICK!!!")
         this->_click->raise(&eClick); 
         DEBUG_PRINT("UP!!!")
         this->_up->raise(&eClick); 	
 		this->downRaised = false;
 	} else {
-		this->devounceValue = (this->devounceValue << 1) | value; 
-        if(!downRaised && this->devounceValue==0xFF) {
+		this->debounceValue = (this->debounceValue << 1) | value; 
+        if(!downRaised && this->debounceValue==0xFF) {
             DEBUG_PRINT("DOWN!!!")
         	this->_down->raise(&eClick); 
 			this->downRaised = true;

@@ -16,7 +16,7 @@ class Button {
         Event<EventArgs>* _up;  
         Timer* t;
         void onTick(EventArgs* e);
-        byte devounceValue;
+        byte debounceValue;
         void initialize(byte pin, byte pushedValue, bool usePullUp, unsigned long debounceTime);
     
     public:

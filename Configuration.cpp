@@ -9,7 +9,7 @@ namespace Configuration {
     States state = undefinedState;
     
     char PLC_Topic[CONFIG_MAX_LENGTH] = "controllino";
-    char root_Topic[CONFIG_MAX_LENGTH] = "home";
+    char root_Topic[CONFIG_MAX_LENGTH] = "iot";
     char command_Topic[CONFIG_MAX_LENGTH] = "command";
     char state_Topic[CONFIG_MAX_LENGTH] = "state";
     char log_Topic[CONFIG_MAX_LENGTH]= "log";
@@ -119,8 +119,8 @@ namespace Configuration {
        state = initialState;
     }
        
-    void initial(String readedString) {
-        if(readedString.equals(String("C"))) {
+    void initial(String readString) {
+        if(readString.equals(String("C"))) {
             setMenuState();
         } else {
             setInitialState();
@@ -133,18 +133,18 @@ namespace Configuration {
         Serial.println();
         
         Serial.print("1: Enter MAC => (");
-        char formatedMAC[17]; 
-        sprintf(formatedMAC, "%x:%x:%x:%x:%x:%x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-        Serial.print(formatedMAC);  Serial.println(")");
+        char formattedMAC[17]; 
+        sprintf(formattedMAC, "%x:%x:%x:%x:%x:%x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        Serial.print(formattedMAC);  Serial.println(")");
         
         Serial.print("2: Enter IP => (");
-        char formatedIP[16]; 
-        sprintf(formatedIP, "%03d.%03d.%03d.%03d", ip[0], ip[1], ip[2], ip[3]);
-        Serial.print(formatedIP);  Serial.println(")");
+        char formattedIP[16]; 
+        sprintf(formattedIP, "%03d.%03d.%03d.%03d", ip[0], ip[1], ip[2], ip[3]);
+        Serial.print(formattedIP);  Serial.println(")");
         
         Serial.print("3: MQTT Server IP => (");
-        sprintf(formatedIP, "%03d.%03d.%03d.%03d", server[0], server[1], server[2], server[3]);
-        Serial.print(formatedIP);  Serial.println(")");
+        sprintf(formattedIP, "%03d.%03d.%03d.%03d", server[0], server[1], server[2], server[3]);
+        Serial.print(formattedIP);  Serial.println(")");
                                                  
         Serial.print("4: MQTT Port => (");
         Serial.print(port);  
@@ -177,28 +177,28 @@ namespace Configuration {
         state = menuState;
     }
     
-    void menu(String readedString){
-        if(readedString == "X") {
+    void menu(String readString){
+        if(readString == "X") {
             setInitialState();
-        } else if(readedString == "1") {   
+        } else if(readString == "1") {
             setMACState();
-        } else if(readedString == "2") {   
+        } else if(readString == "2") {
             setIPState();
-        } else if(readedString == "3") {   
+        } else if(readString == "3") {
             setServerState();
-        } else if(readedString == "4") {   
+        } else if(readString == "4") {
             setPortState();
-        } else if(readedString == "5") {   
+        } else if(readString == "5") {
             setRootTopicState();
-        } else if(readedString == "6") {   
+        } else if(readString == "6") {
             setPLCTopicState();
-        } else if(readedString == "7") {   
+        } else if(readString == "7") {
             setCommandTopicState();
-        } else if(readedString == "8") {   
+        } else if(readString == "8") {
             setStateTopicState();
-        } else if(readedString == "9") {   
+        } else if(readString == "9") {
             setLogTopicState();
-        } else if(readedString == "R") {   
+        } else if(readString == "R") {
               save();
               wdt_enable(WDTO_60MS);
               while(1) {}
@@ -212,8 +212,8 @@ namespace Configuration {
         state = PLCTopicState;
     }
     
-   void PLCTopic(String readedString){
-        readedString.toCharArray(PLC_Topic,readedString.length()+1);
+   void PLCTopic(String readString){
+        readString.toCharArray(PLC_Topic,readString.length()+1);
         setMenuState();
     }
     
@@ -232,8 +232,8 @@ namespace Configuration {
         state = commandTopicState;
    } 
   
-   void commandTopic(String readedString){
-        readedString.toCharArray(command_Topic,readedString.length()+1);
+   void commandTopic(String readString){
+        readString.toCharArray(command_Topic,readString.length()+1);
         setMenuState();
    } 
         
@@ -252,8 +252,8 @@ namespace Configuration {
         state = logTopicState;
    }  
     
-   void logTopic(String readedString){
-        readedString.toCharArray(log_Topic,readedString.length()+1);
+   void logTopic(String readString){
+        readString.toCharArray(log_Topic,readString.length()+1);
         setMenuState();
    } 
     
@@ -262,10 +262,10 @@ namespace Configuration {
         state = IPState;
    }  
  
-   void IP(String readedString) {
+   void IP(String readString) {
        int i;
        for(i=0;i<4;i++){
-        ip[i] = readedString.substring(i*4,i*4+3).toInt();
+        ip[i] = readString.substring(i*4,i*4+3).toInt();
        }
         setMenuState();
     }
@@ -276,10 +276,10 @@ namespace Configuration {
         state = serverState;
    }  
  
-   void server_State(String readedString) {
+   void server_State(String readString) {
        int i;
        for(i=0;i<4;i++){
-        server[i] = readedString.substring(i*4,i*4+3).toInt();
+        server[i] = readString.substring(i*4,i*4+3).toInt();
        }
         setMenuState();
     }
@@ -289,8 +289,8 @@ namespace Configuration {
         state = portState;
    } 
     
-   void port_State(String readedString){
-       port = readedString.toInt(); 
+   void port_State(String readString){
+       port = readString.toInt();
        setMenuState();
    } 
     
@@ -299,11 +299,11 @@ namespace Configuration {
         state = MACState;
    }  
  
-   void MAC(String readedString) {
+   void MAC(String readString) {
         char aux[3];
         int i;
         for(i=0;i<6;i++) {
-            readedString.substring(i*3,i*3+2).toCharArray(aux,3);
+            readString.substring(i*3,i*3+2).toCharArray(aux,3);
             mac[i] = strtol(aux, 0, 16);
         }
 
@@ -311,56 +311,56 @@ namespace Configuration {
     } 
     
     void loop(){
-        static String readedString("");
+        static String readString("");
         if (Serial.available() > 0) {
-            char readed = Serial.read();
-            Serial.print(readed);
+            char read = Serial.read();
+            Serial.print(read);
 
-            if(readed == 13){
+            if(read == 13){
                 Serial.println();
                 switch (state) {
                     case menuState:
-                       menu(readedString);
+                       menu(readString);
                        break;
                     case initialState:
-                       initial(readedString);
+                       initial(readString);
                        break;
                     case PLCTopicState:
-                       PLCTopic(readedString);
+                       PLCTopic(readString);
                        break;
                     case MACState:
-                       MAC(readedString);
+                       MAC(readString);
                        break;
                     case IPState:
-                       IP(readedString);
+                       IP(readString);
                        break;
                     case serverState:
-                       server_State(readedString);
+                       server_State(readString);
                        break;
                     case portState:
-                       port_State(readedString);
+                       port_State(readString);
                        break;
                     case rootTopicState:
-                       rootTopic(readedString);
+                       rootTopic(readString);
                        break;
                     case commandTopicState:
-                       commandTopic(readedString);
+                       commandTopic(readString);
                        break;
                     case stateTopicState:
-                       stateTopic(readedString);
+                       stateTopic(readString);
                        break;
                     case logTopicState:
-                       logTopic(readedString);
+                       logTopic(readString);
                         break;
                    default:
                         setInitialState();
                         break;
                 }
                 
-                readedString="";
+                readString="";
                 Serial.print(">");
             } else {
-                 readedString += readed;
+                 readString += read;
             }
             
         }
