@@ -1,0 +1,9 @@
+.settings/*
+Release/*
+sloeber.ino.cpp
+spec.d
+
+MyHome.code-workspace
+.vscode/*
+RoomControl/.vscode/*
+Controllino/.vscode/*
