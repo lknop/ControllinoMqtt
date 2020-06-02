@@ -7,3 +7,4 @@ MyHome.code-workspace
 .vscode/*
 RoomControl/.vscode/*
 Controllino/.vscode/*
+/Release/

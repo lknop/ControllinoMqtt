@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>MyHome</name>
+	<name>ControllinoMqtt</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -44,7 +44,7 @@
 		<link>
 			<name>libraries/ArduinoSTL</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/ArduinoSTL/1.1.0</locationURI>
+			<location>/home/lknop/Arduino/libraries/ArduinoSTL</location>
 		</link>
 		<link>
 			<name>libraries/Button</name>
