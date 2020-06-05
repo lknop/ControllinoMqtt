@@ -44,7 +44,7 @@
 		<link>
 			<name>libraries/ArduinoSTL</name>
 			<type>2</type>
-			<location>/home/lknop/Arduino/libraries/ArduinoSTL</location>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/ArduinoSTL/1.1.0</locationURI>
 		</link>
 		<link>
 			<name>libraries/Button</name>
@@ -54,7 +54,7 @@
 		<link>
 			<name>libraries/CONTROLLINO</name>
 			<type>2</type>
-			<location>/home/lknop/Arduino/libraries/CONTROLLINO</location>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/CONTROLLINO/3.0.5</locationURI>
 		</link>
 		<link>
 			<name>libraries/EEPROM</name>
