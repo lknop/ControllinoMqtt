@@ -47,7 +47,7 @@ void PLC::setup() {
 }
  
 void PLC::loop() {
-    DEBUG_PRINT("loop start");
+    // DEBUG_PRINT("loop start");
 	
 	Configuration::loop();
 	
@@ -67,7 +67,7 @@ void PLC::loop() {
 		Timer::loop();
 	}
 	
-    DEBUG_PRINT("loop end");
+    // DEBUG_PRINT("loop end");
 }
 
 void PLC::initializeMQTT() {
@@ -80,7 +80,19 @@ void PLC::initializeMQTT() {
 void PLC::initializeEthernet() {
   INFO_PRINT("Initializing ethernet...");
   IPAddress ip(Configuration::ip[0], Configuration::ip[1], Configuration::ip[2], Configuration::ip[3]);
-  Ethernet.begin(Configuration::mac,ip);
+  Ethernet.init(10);
+  if (Ethernet.begin(Configuration::mac) == 0) {
+	Serial.println(F("Failed to configure Ethernet using DHCP"));
+	if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+	  Serial.println(F("Ethernet shield was not found.  Sorry, can't run without hardware. :("));
+	} else if (Ethernet.linkStatus() == LinkOFF) {
+	  Serial.println(F("Ethernet cable is not connected."));
+	}
+		// no point in carrying on, so do nothing forevermore:
+	while (true) {
+	  delay(1);
+	}
+  }
   
   DEBUG_PRINT("Initializing")
   // Allow the hardware to sort itself out
@@ -104,16 +116,17 @@ void PLC::initializeInputs() {
 	};
 	
 	for(int i=0;i<=18;i++) {
-		DEBUG_PRINT("Input  " << i << " pin " << pins[i])
-		Button *button = new Button(pins[i] , HIGH, false, &PLC::onButtonClick, 10);
-		DEBUG_PRINT("Handlers  " << i)
+		DEBUG_PRINT_PARAM("Input  ", i);
+		DEBUG_PRINT_PARAM(" pin ", pins[i]);
+		Button *button = new Button(pins[i] , LOW, true, &PLC::onButtonClick, 10);
+		DEBUG_PRINT_PARAM("Handlers  ", i)
 		button->down()->addHandler(&PLC::onButtonDown);
 		button->up()->addHandler(&PLC::onButtonUp);
-		DEBUG_PRINT("Creating input  " << i)
+		DEBUG_PRINT_PARAM("Creating input  ", i)
 		Input *input = new Input(names[i], button);
-		DEBUG_PRINT("Adding to the list  " << i)
+		DEBUG_PRINT_PARAM("Adding to the list  ", i)
 		PLC::inputs.push_back(input);
-		DEBUG_PRINT("Initialized  " << i)
+		DEBUG_PRINT_PARAM("Initialized  ", i)
  }
 	DEBUG_PRINT("Initialized")
 
@@ -133,13 +146,10 @@ bool PLC::reconnect() {
 		char subscribe_Topic[topicLength]; 
         sprintf(subscribe_Topic, "%s/%s/#", Configuration::root_Topic, Configuration::PLC_Topic);
         mqttClient.subscribe(subscribe_Topic);
-        INFO_PRINT("Subscribed to: ");
-        INFO_PRINT(subscribe_Topic); 
+        INFO_PRINT_PARAM("Subscribed to: ", subscribe_Topic);
         res = true;
     } else {
-        INFO_PRINT("Error!, rc=");
-        INFO_PRINT(mqttClient.state());
-        //INFO_PRINT(" reintentando en 5 segundos");
+        INFO_PRINT_PARAM("Error!, rc=", mqttClient.state());
         // Wait 5 seconds before retrying
         //delay(5000);
         res = false;
@@ -149,7 +159,7 @@ bool PLC::reconnect() {
 
 void PLC::log(const char* errorMsg)
 {
-    INFO_PRINT(errorMsg);
+    INFO_PRINT_PARAM("LOG", errorMsg);
     if (mqttClient.connected()) {
 		int topicLength = strlen(Configuration::root_Topic) +  strlen(Configuration::log_Topic)+ strlen(Configuration::PLC_Topic)+3;
 		char log_Topic[topicLength]; 
@@ -159,16 +169,16 @@ void PLC::log(const char* errorMsg)
 }
 
 void PLC::onMQTTMessage(char* topic, byte* payload, unsigned int length) {
-    DEBUG_PRINT("Message arrived [" << topic << "] ");
+    DEBUG_PRINT_PARAM("Message arrived to topic", topic);
     
     for (unsigned int i=0;i<length;i++) {
-        DEBUG_PRINT((char)payload[i]);
+        DEBUG_PRINT_PARAM("Payload", (char)payload[i]);
     }
     
 
     char command[10];
     if (getOuput(topic, command)) {
-        DEBUG_PRINT("Command: " << command);
+        DEBUG_PRINT_PARAM("Command: ", command);
         
         int newState = getValue(payload, length);
         
@@ -233,23 +243,19 @@ void PLC::publish(const char* portName,const char* messageType, const char* payl
 }
 
 void PLC::onButtonClick(EventArgs* e){
-	INFO_PRINT("Click!!!");
-	INFO_PRINT(((Button*)e->sender)->pin());
+	INFO_PRINT_PARAM("Click!", ((Button*)e->sender)->pin());
 	publishInput(((Button*)e->sender)->pin(), "click");
 	
 }
 
 void PLC::onButtonDown(EventArgs* e){
-	INFO_PRINT("Down!!!");
-	INFO_PRINT(((Button*)e->sender)->pin());
+	INFO_PRINT_PARAM("Down!", ((Button*)e->sender)->pin());
 	publishInput(((Button*)e->sender)->pin(), "down");
 	
 }
 
 void PLC::onButtonUp(EventArgs* e){
-	INFO_PRINT("Up!!!");
-	INFO_PRINT(((Button*)e->sender)->pin());
-	
+	INFO_PRINT_PARAM("Up!", ((Button*)e->sender)->pin());
 	publishInput(((Button*)e->sender)->pin(), "up");
 	
 }

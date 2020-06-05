@@ -38,7 +38,7 @@ class Event
 		void raise(TEventArgs* args) { 
 			if(handlerCount()==0) 
 			{
-				DEBUG_PRINT("There are: " << handlerCount() << " handlers")
+				DEBUG_PRINT_PARAM("Handler count ", handlerCount())
 			}
 
 			typename vector<Handler>::iterator Iter;

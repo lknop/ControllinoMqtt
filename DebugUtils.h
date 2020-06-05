@@ -8,13 +8,27 @@
 
 
 #define TRACE(type, str)    \
-    std::cout << millis() << " : " << type << " : " << str << " : " << __PRETTY_FUNCTION__ << "\n"; \
+    Serial.print(millis()); \
+    Serial.print(F(" : ")); \
+	Serial.print(F(type)); \
+	Serial.print(F(" : ")); \
+	Serial.print(F(str)); \
+	Serial.print(F(" : ")); \
+	Serial.print(__PRETTY_FUNCTION__); \
+	Serial.print(F("\n")); \
     Serial.flush();
 
-#define TRACE_FORMATED(type, str, format)    \
-    std::cout << millis() << " : " << type << " : ";  \
-    Serial.print(str,format); \
-    std::cout << " : " << __PRETTY_FUNCTION__ << "\n"; \
+#define TRACE_PARAM(type, str, param)    \
+    Serial.print(millis()); \
+    Serial.print(F(" : ")); \
+	Serial.print(F(type)); \
+	Serial.print(F(" : ")); \
+	Serial.print(F(str)); \
+	Serial.print(F(" : ")); \
+	Serial.print(param); \
+	Serial.print(F(" : ")); \
+	Serial.print(__PRETTY_FUNCTION__); \
+	Serial.print(F("\n")); \
     Serial.flush();
 
 #ifdef TRACE_LEVEL_OFF
@@ -49,10 +63,10 @@
         #define TRACE_LEVEL_INFO
     #endif
     #define DEBUG_PRINT(str)  TRACE("DEBUG", str)
-    #define DEBUG_PRINT_FORMATED(str, format)   TRACE("DEBUG", str, format)
+    #define DEBUG_PRINT_PARAM(str, param)   TRACE_PARAM("DEBUG", str, param)
 #else
     #define DEBUG_PRINT(str)
-    #define DEBUG_PRINT_FORMATED(str, format)
+    #define DEBUG_PRINT_PARAM(str, param)
 #endif
 
 #ifdef TRACE_LEVEL_INFO
@@ -60,10 +74,10 @@
         #define TRACE_LEVEL_WARN
     #endif
     #define INFO_PRINT(str)  TRACE("INFO ", str)
-    #define INFO_PRINT_FORMATED(str, format)   TRACE("INFO ", str, format)
+    #define INFO_PRINT_PARAM(str, param)   TRACE_PARAM("INFO ", str, param)
 #else
     #define INFO_PRINT(str)
-    #define INFO_PRINT_FORMATED(str, format)
+    #define INFO_PRINT_PARAM(str, param)
 #endif
 
 #ifdef TRACE_LEVEL_WARN
@@ -71,10 +85,10 @@
         #define TRACE_LEVEL_ERROR
     #endif
     #define WARN_PRINT(str)  TRACE("WARN", str)
-    #define WARN_PRINT_FORMATED(str, format)   TRACE("WARN", str, format)
+    #define WARN_PRINT_PARAM(str, param)   TRACE_PARAM("WARN", str, param)
 #else
     #define WARN_PRINT(str)
-    #define WARN_PRINT_FORMATED(str, format)
+    #define WARN_PRINT_PARAM(str, param)
 #endif
 
 #ifdef TRACE_LEVEL_ERROR
@@ -82,18 +96,18 @@
         #define TRACE_LEVEL_FATAL
     #endif
     #define ERROR_PRINT(str)  TRACE("ERROR", str)
-    #define ERROR_PRINT_FORMATED(str, format)   TRACE("ERROR", str, format)
+    #define ERROR_PRINT_PARAM(str, param)   TRACE_PARAM("ERROR", str, param)
 #else
     #define ERROR_PRINT(str)
-    #define ERROR_PRINT_FORMATED(str, format)
+    #define ERROR_PRINT_PARAM(str, param)
 #endif
 
 #ifdef TRACE_LEVEL_FATAL
     #define FATAL_PRINT(str)  TRACE("FATAL", str)
-    #define FATAL_PRINT_FORMATED(str, format)   TRACE("FATAL", str, format)
+    #define FATAL_PRINT_PARAM(str, param)   TRACE_PARAM("FATAL", str, param)
 #else
     #define FATAL_PRINT(str)
-    #define FATAL_PRINT_FORMATED(str, format)
+    #define FATAL_PRINT_PARAM(str, param)
 #endif
 
 

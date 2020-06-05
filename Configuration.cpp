@@ -87,7 +87,7 @@ namespace Configuration {
     }
     
     void load() {
-        Serial.print("Loading configuration...");
+        Serial.print(F("Loading configuration..."));
         int currentAddress = 0;
         char aux[CONFIG_SIGNATURE_LENGTH+1];
         isValid = true;
@@ -95,12 +95,12 @@ namespace Configuration {
         // signature
         readCharArray(currentAddress, aux, CONFIG_SIGNATURE_LENGTH+1);
         if(strcmp(aux,signature)) {
-            Serial.print("signature ");
+            Serial.print(F("signature "));
             Serial.print(aux);
-            Serial.print(" invalid!!!");
+            Serial.print(F(" invalid!!!"));
             isValid = false;
         } else {
-            Serial.print("found...");
+            Serial.print(F("found..."));
             readCharArray(currentAddress, PLC_Topic, CONFIG_MAX_LENGTH);
             readCharArray(currentAddress, root_Topic, CONFIG_MAX_LENGTH);
             readCharArray(currentAddress, command_Topic, CONFIG_MAX_LENGTH);
@@ -115,7 +115,7 @@ namespace Configuration {
 
     void setInitialState() {
        isConfiguring = false;
-       Serial.println("To enter configuration mode press C");
+       Serial.println(F("To enter configuration mode press C"));
        state = initialState;
     }
        
@@ -129,51 +129,51 @@ namespace Configuration {
     
     void setMenuState() {
         isConfiguring = true;
-        Serial.println("*** MAIN CONFIGURATION MENU ***");
+        Serial.println(F("*** MAIN CONFIGURATION MENU ***"));
         Serial.println();
         
-        Serial.print("1: Enter MAC => (");
+        Serial.print(F("1: Enter MAC => ("));
         char formattedMAC[17]; 
         sprintf(formattedMAC, "%x:%x:%x:%x:%x:%x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         Serial.print(formattedMAC);  Serial.println(")");
         
-        Serial.print("2: Enter IP => (");
+        Serial.print(F("2: Enter IP => ("));
         char formattedIP[16]; 
         sprintf(formattedIP, "%03d.%03d.%03d.%03d", ip[0], ip[1], ip[2], ip[3]);
         Serial.print(formattedIP);  Serial.println(")");
         
-        Serial.print("3: MQTT Server IP => (");
+        Serial.print(F("3: MQTT Server IP => ("));
         sprintf(formattedIP, "%03d.%03d.%03d.%03d", server[0], server[1], server[2], server[3]);
-        Serial.print(formattedIP);  Serial.println(")");
+        Serial.print(formattedIP);  Serial.println(F(")"));
                                                  
-        Serial.print("4: MQTT Port => (");
+        Serial.print(F("4: MQTT Port => ("));
         Serial.print(port);  
-        Serial.println(")");
+        Serial.println(F(")"));
                                                  
-        Serial.print("5: Root Topic => ("); 
+        Serial.print(F("5: Root Topic => ("));
         Serial.print(root_Topic);  
-        Serial.println(")");
+        Serial.println(F(")"));
                                                  
-        Serial.print("6: PLC Topic => ("); 
+        Serial.print(F("6: PLC Topic => ("));
         Serial.print(PLC_Topic);  
-        Serial.println(")");
+        Serial.println(F(")"));
                                                  
-        Serial.print("7: Command Topic => ("); 
+        Serial.print(F("7: Command Topic => ("));
         Serial.print(command_Topic);  
-        Serial.println(")");
+        Serial.println(F(")"));
                                                  
-        Serial.print("8: State Topic => ("); 
+        Serial.print(F("8: State Topic => ("));
         Serial.print(state_Topic);  
-        Serial.println(")");
+        Serial.println(F(")"));
                                                  
-        Serial.print("9: Log Topic => ("); 
+        Serial.print(F("9: Log Topic => ("));
         Serial.print(log_Topic);  
-        Serial.println(")");
+        Serial.println(F(")"));
                                                  
         Serial.println();
-        Serial.println("X: Exit");
+        Serial.println(F("X: Exit"));
         Serial.println();
-        Serial.println ("Enter option: ");
+        Serial.println (F("Enter option: "));
         state = menuState;
     }
     
@@ -208,7 +208,7 @@ namespace Configuration {
     }
     
     void setPLCTopicState() {
-        Serial.print ("Enter PLC Topic: ");
+        Serial.print (F("Enter PLC Topic: "));
         state = PLCTopicState;
     }
     
@@ -218,7 +218,7 @@ namespace Configuration {
     }
     
    void setRootTopicState() {
-        Serial.print ("Enter root topic: ");
+        Serial.print (F("Enter root topic: "));
         state = rootTopicState;
    }
  
@@ -228,7 +228,7 @@ namespace Configuration {
     } 
 
     void setCommandTopicState() {
-        Serial.print ("Enter command topic: ");
+        Serial.print (F("Enter command topic: "));
         state = commandTopicState;
    } 
   
@@ -238,7 +238,7 @@ namespace Configuration {
    } 
         
    void setStateTopicState() {
-        Serial.print ("Enter state topic: ");
+        Serial.print (F("Enter state topic: "));
         state = stateTopicState;
    } 
     
@@ -248,7 +248,7 @@ namespace Configuration {
    } 
      
    void setLogTopicState() {
-        Serial.print ("Enter log topic: ");
+        Serial.print (F("Enter log topic: "));
         state = logTopicState;
    }  
     
@@ -258,7 +258,7 @@ namespace Configuration {
    } 
     
    void setIPState() {
-        Serial.print ("Enter IP: (nnn.nnn.nnn.nnn)");
+        Serial.print (F("Enter IP: (nnn.nnn.nnn.nnn)"));
         state = IPState;
    }  
  
@@ -272,7 +272,7 @@ namespace Configuration {
     
         
    void setServerState() {
-        Serial.print ("Enter server IP: (nnn.nnn.nnn.nnn)");
+        Serial.print (F("Enter server IP: (nnn.nnn.nnn.nnn)"));
         state = serverState;
    }  
  
@@ -285,7 +285,7 @@ namespace Configuration {
     }
 
     void setPortState() {
-        Serial.print ("Enter server port: ");
+        Serial.print (F("Enter server port: "));
         state = portState;
    } 
     
@@ -295,7 +295,7 @@ namespace Configuration {
    } 
     
    void setMACState() {
-        Serial.print ("Enter MAC: (HH:HH:HH:HH:HH:HH)");
+        Serial.print (F("Enter MAC: (HH:HH:HH:HH:HH:HH)"));
         state = MACState;
    }  
  
