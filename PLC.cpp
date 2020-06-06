@@ -84,17 +84,22 @@ void PLC::initializeEthernet() {
 #ifdef SIMULATED_CONTROLLINO
   Ethernet.init(10);
 #endif
-  int ethresult = Configuration::ip[0] == 0 ?
-			Ethernet.begin(Configuration::mac) :
-			Ethernet.begin(Configuration::mac, ip);
-  if (ethresult == 0) {
+  int validAddress;
+  if (Configuration::ip[0] == 0) { // use DHCP
+      validAddress = Ethernet.begin(Configuration::mac);
+  } else {
+      Ethernet.begin(Configuration::mac, ip);
+      validAddress = 1;
+  }
+
+  if (validAddress == 0) {
     INFO_PRINT("Failed to configure Ethernet using DHCP");
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
       INFO_PRINT("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
     } else if (Ethernet.linkStatus() == LinkOFF) {
       INFO_PRINT("Ethernet cable is not connected.");
     }
-    // no point in carrying on, so do nothing forevermore:
+    // no point in carrying on, so do nothing forever:
     while (true) {
       delay(1);
     }
