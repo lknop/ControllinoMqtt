@@ -25,19 +25,18 @@ vector<Input*> PLC::inputs;
 long PLC::millisLastAttempt = 0;
 
 void PLC::setup() {
-
 #ifdef CONTROLLINO_MEGA
 	DEBUG_PRINT("CONTROLLINO_MEGA defined");
 #endif
-	TRACE("DEBUG", "initializing");
+
 
 	DEBUG_PRINT("Initializing PLC");
 
 	Configuration::load();	
 
 	if(Configuration::isValid) {
-		PLC::initializeEthernet();
 		PLC::initializeMQTT();
+		PLC::initializeEthernet();
 		PLC::initializeInputs();
 		DEBUG_PRINT("Initialization OK");
 	} else {
@@ -49,7 +48,6 @@ void PLC::setup() {
  
 void PLC::loop() {
     DEBUG_PRINT("loop start");
-
 	
 	Configuration::loop();
 	
@@ -72,24 +70,6 @@ void PLC::loop() {
     DEBUG_PRINT("loop end");
 }
 
-#ifdef __arm__
-// should use uinstd.h to define sbrk but Due causes a conflict
-extern "C" char* sbrk(int incr);
-#else  // __ARM__
-extern char *__brkval;
-#endif  // __arm__
-
-int PLC::freeMemory() {
-  char top;
-#ifdef __arm__
-  return &top - reinterpret_cast<char*>(sbrk(0));
-#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
-  return &top - __brkval;
-#else  // __arm__
-  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
-#endif  // __arm__
-}
-
 void PLC::initializeMQTT() {
   INFO_PRINT("Initializing MQTT client...");
   IPAddress server(Configuration::server[0], Configuration::server[1], Configuration::server[2], Configuration::server[3]);
@@ -100,21 +80,12 @@ void PLC::initializeMQTT() {
 void PLC::initializeEthernet() {
   INFO_PRINT("Initializing ethernet...");
   IPAddress ip(Configuration::ip[0], Configuration::ip[1], Configuration::ip[2], Configuration::ip[3]);
-  //Ethernet.begin(Configuration::mac); // ,ip);
-  Ethernet.init(10);
-  if (Ethernet.begin(Configuration::mac) == 0) {
-      Serial.println(F("Failed to configure Ethernet using DHCP"));
-      if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-        Serial.println(F("Ethernet shield was not found.  Sorry, can't run without hardware. :("));
-      } else if (Ethernet.linkStatus() == LinkOFF) {
-        Serial.println(F("Ethernet cable is not connected."));
-      }
-      // no point in carrying on, so do nothing forevermore:
-      while (true) {
-        delay(1);
-      }
-    }
+  Ethernet.begin(Configuration::mac,ip);
   
+  DEBUG_PRINT("Initializing")
+  // Allow the hardware to sort itself out
+  delay(1500);
+
     Serial.println(Ethernet.localIP());
 	
 }
@@ -122,27 +93,25 @@ void PLC::initializeEthernet() {
 void PLC::initializeInputs() {  
 	INFO_PRINT("Initializing inputs...");
 	const char * names[19] = {"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","I16","I17","I18"};
-	byte pins[16] = {
+	byte pins[19] = {
 		CONTROLLINO_A0,  CONTROLLINO_A1,  CONTROLLINO_A2,
 		CONTROLLINO_A3,	 CONTROLLINO_A4,  CONTROLLINO_A5,
 		CONTROLLINO_A6,	 CONTROLLINO_A7,  CONTROLLINO_A8,
 		CONTROLLINO_A9,	 CONTROLLINO_A10, CONTROLLINO_A11,
 		CONTROLLINO_A12, CONTROLLINO_A13, CONTROLLINO_A14,
-		CONTROLLINO_A15 //, CONTROLLINO_I16, CONTROLLINO_I17,
-		//CONTROLLINO_I18
+		CONTROLLINO_A15, CONTROLLINO_I16, CONTROLLINO_I17,
+		CONTROLLINO_I18
 	};
-	Button buttons[16];
 	
-	for(int i=0;i< 16;i++) {
+	for(int i=0;i<=18;i++) {
 		DEBUG_PRINT("Input  " << i << " pin " << pins[i])
-		buttons[i] = Button(pins[i] , LOW, true, &PLC::onButtonClick, 10);
+		Button *button = new Button(pins[i] , HIGH, false, &PLC::onButtonClick, 10);
 		DEBUG_PRINT("Handlers  " << i)
-		buttons[i].down()->addHandler(&PLC::onButtonDown);
-		buttons[i].up()->addHandler(&PLC::onButtonUp);
+		button->down()->addHandler(&PLC::onButtonDown);
+		button->up()->addHandler(&PLC::onButtonUp);
 		DEBUG_PRINT("Creating input  " << i)
-		Input *input = new Input(names[i], &buttons[i]);
+		Input *input = new Input(names[i], button);
 		DEBUG_PRINT("Adding to the list  " << i)
-		INFO_PRINT_DYNAMIC(freeMemory())
 		PLC::inputs.push_back(input);
 		DEBUG_PRINT("Initialized  " << i)
  }
@@ -165,11 +134,11 @@ bool PLC::reconnect() {
         sprintf(subscribe_Topic, "%s/%s/#", Configuration::root_Topic, Configuration::PLC_Topic);
         mqttClient.subscribe(subscribe_Topic);
         INFO_PRINT("Subscribed to: ");
-        INFO_PRINT_DYNAMIC(subscribe_Topic);
+        INFO_PRINT(subscribe_Topic); 
         res = true;
     } else {
         INFO_PRINT("Error!, rc=");
-        INFO_PRINT_DYNAMIC(mqttClient.state());
+        INFO_PRINT(mqttClient.state());
         //INFO_PRINT(" reintentando en 5 segundos");
         // Wait 5 seconds before retrying
         //delay(5000);
@@ -180,7 +149,7 @@ bool PLC::reconnect() {
 
 void PLC::log(const char* errorMsg)
 {
-    INFO_PRINT_DYNAMIC(errorMsg);
+    INFO_PRINT(errorMsg);
     if (mqttClient.connected()) {
 		int topicLength = strlen(Configuration::root_Topic) +  strlen(Configuration::log_Topic)+ strlen(Configuration::PLC_Topic)+3;
 		char log_Topic[topicLength]; 
@@ -265,21 +234,21 @@ void PLC::publish(const char* portName,const char* messageType, const char* payl
 
 void PLC::onButtonClick(EventArgs* e){
 	INFO_PRINT("Click!!!");
-	INFO_PRINT_DYNAMIC(((Button*)e->sender)->pin());
+	INFO_PRINT(((Button*)e->sender)->pin());
 	publishInput(((Button*)e->sender)->pin(), "click");
 	
 }
 
 void PLC::onButtonDown(EventArgs* e){
 	INFO_PRINT("Down!!!");
-	INFO_PRINT_DYNAMIC(((Button*)e->sender)->pin());
+	INFO_PRINT(((Button*)e->sender)->pin());
 	publishInput(((Button*)e->sender)->pin(), "down");
 	
 }
 
 void PLC::onButtonUp(EventArgs* e){
 	INFO_PRINT("Up!!!");
-	INFO_PRINT_DYNAMIC(((Button*)e->sender)->pin());
+	INFO_PRINT(((Button*)e->sender)->pin());
 	
 	publishInput(((Button*)e->sender)->pin(), "up");
 	

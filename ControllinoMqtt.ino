@@ -10,7 +10,6 @@
 void setup()
 {
     Serial.begin(115200);
-    DEBUG_PRINT("Hello world")
     PLC::setup();
 }
 

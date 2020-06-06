@@ -2,27 +2,19 @@
 #define DEBUGUTILS_H
 
 #include <Arduino.h>
+#include <ArduinoSTL.h>
+
+
+
 
 #define TRACE(type, str)    \
-    Serial.print(millis()); \
-    Serial.print(F(" : ")); \
-	Serial.print(F(type)); \
-	Serial.print(F(" : ")); \
-	Serial.print(F(str)); \
-	Serial.print(F(" : ")); \
-	Serial.print(__PRETTY_FUNCTION__); \
-	Serial.print(F("\n")); \
+    std::cout << millis() << " : " << type << " : " << str << " : " << __PRETTY_FUNCTION__ << "\n"; \
     Serial.flush();
 
-#define TRACE_DYNAMIC(type, str)    \
-    Serial.print(millis()); \
-    Serial.print(F(" : ")); \
-    Serial.print(F(type)); \
-    Serial.print(F(" : ")); \
-    Serial.print(str); \
-    Serial.print(F(" : ")); \
-    Serial.print(__PRETTY_FUNCTION__); \
-    Serial.print(F("\n")); \
+#define TRACE_FORMATED(type, str, format)    \
+    std::cout << millis() << " : " << type << " : ";  \
+    Serial.print(str,format); \
+    std::cout << " : " << __PRETTY_FUNCTION__ << "\n"; \
     Serial.flush();
 
 #ifdef TRACE_LEVEL_OFF
@@ -57,10 +49,10 @@
         #define TRACE_LEVEL_INFO
     #endif
     #define DEBUG_PRINT(str)  TRACE("DEBUG", str)
-    #define DEBUG_PRINT_DYNAMIC(str)   TRACE_DYNAMIC("DEBUG", str)
+    #define DEBUG_PRINT_FORMATED(str, format)   TRACE("DEBUG", str, format)
 #else
     #define DEBUG_PRINT(str)
-    #define DEBUG_PRINT_DYNAMIC(str)
+    #define DEBUG_PRINT_FORMATED(str, format)
 #endif
 
 #ifdef TRACE_LEVEL_INFO
@@ -68,10 +60,10 @@
         #define TRACE_LEVEL_WARN
     #endif
     #define INFO_PRINT(str)  TRACE("INFO ", str)
-    #define INFO_PRINT_DYNAMIC(str)   TRACE_DYNAMIC("INFO ", str)
+    #define INFO_PRINT_FORMATED(str, format)   TRACE("INFO ", str, format)
 #else
     #define INFO_PRINT(str)
-    #define INFO_PRINT_DYNAMIC(str)
+    #define INFO_PRINT_FORMATED(str, format)
 #endif
 
 #ifdef TRACE_LEVEL_WARN
@@ -79,10 +71,10 @@
         #define TRACE_LEVEL_ERROR
     #endif
     #define WARN_PRINT(str)  TRACE("WARN", str)
-    #define WARN_PRINT_DYNAMIC(str)   TRACE_DYNAMIC("WARN", str)
+    #define WARN_PRINT_FORMATED(str, format)   TRACE("WARN", str, format)
 #else
     #define WARN_PRINT(str)
-    #define WARN_PRINT_DYNAMIC(str)
+    #define WARN_PRINT_FORMATED(str, format)
 #endif
 
 #ifdef TRACE_LEVEL_ERROR
@@ -90,18 +82,18 @@
         #define TRACE_LEVEL_FATAL
     #endif
     #define ERROR_PRINT(str)  TRACE("ERROR", str)
-    #define ERROR_PRINT_DYNAMIC(str)   TRACE_DYNAMIC("ERROR", str)
+    #define ERROR_PRINT_FORMATED(str, format)   TRACE("ERROR", str, format)
 #else
     #define ERROR_PRINT(str)
-    #define ERROR_PRINT_DYNAMIC(str)
+    #define ERROR_PRINT_FORMATED(str, format)
 #endif
 
 #ifdef TRACE_LEVEL_FATAL
     #define FATAL_PRINT(str)  TRACE("FATAL", str)
-    #define FATAL_PRINT_DYNAMIC(str)   TRACE_DYNAMIC("FATAL", str)
+    #define FATAL_PRINT_FORMATED(str, format)   TRACE("FATAL", str, format)
 #else
     #define FATAL_PRINT(str)
-    #define FATAL_PRINT_DYNAMIC(str)
+    #define FATAL_PRINT_FORMATED(str, format)
 #endif
 
 

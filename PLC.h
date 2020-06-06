@@ -37,7 +37,6 @@ class PLC {
         static vector<Input*> inputs;
         static long millisLastAttempt;
         static void initializeMQTT();
-        static int freeMemory();
         static void initializeEthernet();
         static void initializeInputs();
         static bool reconnect();
