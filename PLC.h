@@ -43,7 +43,7 @@ class PLC {
         static void log(const char* errorMsg);
         static void onMQTTMessage(char* topic, byte* payload, unsigned int length) ;
         static bool getOuput(char* topic,char* ouput);
-        static void updateRelay(char* relayName,int newState);
+        static void updateOutput(char* outputName,int newState);
         static void onButtonClick(EventArgs* e);
         static void onButtonDown(EventArgs* e);
         static void onButtonUp(EventArgs* e);

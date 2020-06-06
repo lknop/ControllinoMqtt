@@ -62,17 +62,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/SRAM}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/ArduinoSTL/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/Button}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/core/core}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/core/variant}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/ArduinoSTL/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/Button}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/CONTROLLINO}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/EEPROM/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/Ethernet/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/PubSubClient/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/SoftwareSerial/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/SPI/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MyHome/libraries/SRAM}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.S.sketch.input.937050498" name="Assembly source files" superClass="io.sloeber.compiler.S.sketch.input"/>
 							</tool>
