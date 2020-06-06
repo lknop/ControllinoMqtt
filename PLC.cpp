@@ -80,31 +80,37 @@ void PLC::initializeMQTT() {
 void PLC::initializeEthernet() {
   INFO_PRINT("Initializing ethernet...");
   IPAddress ip(Configuration::ip[0], Configuration::ip[1], Configuration::ip[2], Configuration::ip[3]);
+
+#ifdef SIMULATED_CONTROLLINO
   Ethernet.init(10);
-  if (Ethernet.begin(Configuration::mac) == 0) {
-	Serial.println(F("Failed to configure Ethernet using DHCP"));
-	if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-	  Serial.println(F("Ethernet shield was not found.  Sorry, can't run without hardware. :("));
-	} else if (Ethernet.linkStatus() == LinkOFF) {
-	  Serial.println(F("Ethernet cable is not connected."));
-	}
-		// no point in carrying on, so do nothing forevermore:
-	while (true) {
-	  delay(1);
-	}
+#endif
+  int ethresult = Configuration::ip[0] == 0 ?
+			Ethernet.begin(Configuration::mac) :
+			Ethernet.begin(Configuration::mac, ip);
+  if (ethresult == 0) {
+    INFO_PRINT("Failed to configure Ethernet using DHCP");
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+      INFO_PRINT("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+    } else if (Ethernet.linkStatus() == LinkOFF) {
+      INFO_PRINT("Ethernet cable is not connected.");
+    }
+    // no point in carrying on, so do nothing forevermore:
+    while (true) {
+      delay(1);
+    }
   }
   
   DEBUG_PRINT("Initializing")
   // Allow the hardware to sort itself out
   delay(1500);
 
-    Serial.println(Ethernet.localIP());
-	
+  INFO_PRINT_PARAM("Local IP", Ethernet.localIP());
 }
 
 void PLC::initializeInputs() {  
 	INFO_PRINT("Initializing inputs...");
-	const char * names[19] = {"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12","A13","A14","A15","I16","I17","I18"};
+	const char * names[19] = {"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10",
+			"A11","A12","A13","A14","A15","I16","I17","I18"};
 	byte pins[19] = {
 		CONTROLLINO_A0,  CONTROLLINO_A1,  CONTROLLINO_A2,
 		CONTROLLINO_A3,	 CONTROLLINO_A4,  CONTROLLINO_A5,
@@ -182,8 +188,8 @@ void PLC::onMQTTMessage(char* topic, byte* payload, unsigned int length) {
         
         int newState = getValue(payload, length);
         
-        if(command[0]=='R') {
-            updateRelay(command, newState);
+        if(command[0]=='R' || command[0]=='D') {
+            updateOutput(command, newState);
         }
 
   } else {
@@ -207,21 +213,30 @@ bool PLC::getOuput(char* topic,char* ouput) {
     return true;
 }
 
-void PLC::updateRelay(char* relayName,int newState) {
-    String strRelayName(relayName);
-    int relayNumber = strRelayName.substring(1).toInt();
-    if(relayNumber>=0 && relayNumber<16) {
-        int relayPort = CONTROLLINO_RELAY_00 + relayNumber;
-		pinMode(relayPort,OUTPUT);
-        digitalWrite(relayPort, newState);
+void PLC::updateOutput(char* outputName,int newState) {
+    String strOutputName(outputName);
+    int outputNumber = strOutputName.substring(1).toInt();
 
-		char value[2];
-        itoa(newState,value,10);
-		PLC::publish(relayName, Configuration::state_Topic, value);
+    int pin;
+
+    if (outputName[0] == 'R' && outputNumber>=0 && outputNumber<16) {
+      pin = CONTROLLINO_R0 + outputNumber;
+    } else if (outputName[0] == 'D' && outputNumber >=0 && outputNumber<12) {
+      pin = CONTROLLINO_D0 + outputNumber;
+    } else if (outputName[0] == 'D' && outputNumber >=12 && outputNumber<20) {
+      pin = CONTROLLINO_D12 + outputNumber;
+    } else if (outputName[0] == 'D' && outputNumber >=20 && outputNumber<23) {
+      pin = CONTROLLINO_D20 + outputNumber;
     } else {
-        log("Incorrect relay number");
+      log("Incorrect output number");
+      return;
     }
+    pinMode(pin,OUTPUT);
+    digitalWrite(pin, newState);
 
+    char value[2];
+    itoa(newState,value,10);
+    PLC::publish(outputName, Configuration::state_Topic, value);
 }
 
 void PLC::publish(const char* portName,const char* messageType, const char* payload ){
