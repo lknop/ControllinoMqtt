@@ -172,10 +172,13 @@ void PLC::log(const char* errorMsg)
 {
     INFO_PRINT_PARAM("LOG", errorMsg);
     if (mqttClient.connected()) {
-		int topicLength = strlen(Configuration::root_Topic) +  strlen(Configuration::log_Topic)+ strlen(Configuration::PLC_Topic)+3;
-		char log_Topic[topicLength]; 
-        sprintf(log_Topic, "%s/%s/%s", Configuration::root_Topic, Configuration::log_Topic, Configuration::PLC_Topic);
-        mqttClient.publish(log_Topic, errorMsg);
+      int topicLength = strlen(Configuration::root_Topic) +  strlen(Configuration::log_Topic)+ strlen(Configuration::PLC_Topic)+3;
+      char log_Topic[topicLength];
+      sprintf(log_Topic, "%s/%s/%s", Configuration::root_Topic, Configuration::PLC_Topic, Configuration::log_Topic);
+      mqttClient.publish(log_Topic, errorMsg);
+      INFO_PRINT_PARAM("Published ", errorMsg);
+      INFO_PRINT_PARAM("to topic ", log_Topic);
+
     }
 }
 
