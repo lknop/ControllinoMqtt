@@ -10,6 +10,7 @@
 #include "Timer.h"
 #include "DebugUtils.h"
 #include "Configuration.h"
+#include "ModbusRtu.h"
 
 #include <Ethernet.h>
 
@@ -35,6 +36,7 @@ class PLC {
         static EthernetClient ethClient;
         static PubSubClient mqttClient;
         static vector<Input*> inputs;
+        static Modbus modbus_master;
         static long millisLastAttempt;
         static void initializeMQTT();
         static void initializeEthernet();
