@@ -22,6 +22,13 @@ using namespace std;
 EthernetClient PLC::ethClient;
 PubSubClient PLC::mqttClient(ethClient);
 vector<Input*> PLC::inputs;
+Modbus PLC::modbus_master(MasterModbusAddress, RS485Serial, 0);
+uint16_t PLC::modbus_reg = 0;
+modbus_t PLC::modbus_data = { .u8id = 0, .u8fct = 2, .u16RegAdd = 0, .u16CoilsNo = 16, .au16reg = &modbus_reg };
+uint16_t PLC::modbus_values = 0;
+uint8_t PLC::modbus_state = 0;
+uint32_t PLC::modbus_wait = 0;
+
 long PLC::millisLastAttempt = 0;
 
 void PLC::setup() {
@@ -38,6 +45,7 @@ void PLC::setup() {
 		PLC::initializeMQTT();
 		PLC::initializeEthernet();
 		PLC::initializeInputs();
+		PLC::initializeModbus();
 		DEBUG_PRINT("Initialization OK");
 	} else {
 		INFO_PRINT("PLC not configured");
@@ -65,9 +73,53 @@ void PLC::loop() {
 			INFO_PRINT("Retrying in five seconds");
 		}
 		Timer::loop();
+		loopModbus();
 	}
 	
     // DEBUG_PRINT("loop end");
+}
+
+void PLC::initializeModbus() {
+	  modbus_data.u8id = 4; // slave address
+
+	  modbus_master.begin( 19200 ); // baud-rate at 19200
+	  modbus_master.setTimeOut( 5000 ); // if there is no answer in 5000 ms, roll over
+	  modbus_wait = millis() + 1000;
+}
+
+void PLC::loopModbus() {
+  char subscribe_topic[5];
+  switch(PLC::modbus_state) {
+	  case 0:
+		  if (millis() > modbus_wait) {
+			modbus_state++;
+		  }
+		  break;
+	  case 1:
+		  modbus_master.query(modbus_data); // send query (only once)
+		  modbus_state++;
+		  break;
+	  case 2:
+		  modbus_master.poll(); // check incoming messages
+		  if (modbus_master.getState() == COM_IDLE)
+		  {
+			 uint16_t current_modbus = modbus_reg;
+			 uint16_t mask = current_modbus ^ modbus_values;
+			 if (mask) {
+				 for (uint8_t i = 0; i < 16; i++) {
+					 if (bitRead(mask, i)) {
+						 sprintf(subscribe_topic, "M%d", i);
+						 PLC::publish(subscribe_topic, Configuration::state_Topic, bitRead(current_modbus, i) ? "up" : "down");
+					 }
+				 }
+				 modbus_values = current_modbus;
+			 }
+			 modbus_state = 0;
+			 modbus_wait = millis() + MODBUS_INTERVAL;
+		  }
+		  break;
+	}
+
 }
 
 void PLC::initializeMQTT() {
@@ -236,15 +288,13 @@ void PLC::updateOutput(char* outputName,int newState) {
     } else if (outputName[0] == 'D' && outputNumber >=20 && outputNumber<23) {
       pin = CONTROLLINO_D20 + outputNumber;
     } else {
-      log("Incorrect output number");
+      log("Invalid output");
       return;
     }
     pinMode(pin,OUTPUT);
     digitalWrite(pin, newState);
 
-    char value[2];
-    itoa(newState,value,10);
-    PLC::publish(outputName, Configuration::state_Topic, value);
+    PLC::publish(outputName, Configuration::state_Topic, newState ? "up" : "down");
 }
 
 void PLC::publish(const char* portName,const char* messageType, const char* payload ){
@@ -291,11 +341,10 @@ void PLC::publishInput(int pin, const char * event)
 			{   
 				if((*Iter)->button->pin()==pin) 
 				{
-					PLC::publish((*Iter)->topic, "command", event);
+					PLC::publish((*Iter)->topic, Configuration::state_Topic, event);
 					break;
 				}
 			}
-	
 }
 
 
@@ -313,7 +362,7 @@ int PLC::getValue(byte* payload, unsigned int length) {
                 value = HIGH;
                 break;
             default:
-                log("Message value error");
+                log("Invalid value");
                 break;
         }
     }  else  {

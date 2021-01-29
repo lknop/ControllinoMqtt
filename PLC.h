@@ -10,9 +10,16 @@
 #include "Timer.h"
 #include "DebugUtils.h"
 #include "Configuration.h"
+#include <Ethernet.h>
 #include "ModbusRtu.h"
 
-#include <Ethernet.h>
+#define MasterModbusAddress  0
+#define MODBUS_INTERVAL 100
+
+// This MACRO defines number of the com port that is used for RS 485 interface.
+// For MAXI and MEGA RS485 is reserved UART Serial3.
+#define RS485Serial     3
+
 
 using namespace std;
 
@@ -37,6 +44,13 @@ class PLC {
         static PubSubClient mqttClient;
         static vector<Input*> inputs;
         static Modbus modbus_master;
+        static modbus_t modbus_data;
+        static uint8_t modbus_state;
+        static uint16_t modbus_reg;
+        static uint16_t modbus_values;
+        static uint32_t modbus_wait;
+        static void initializeModbus();
+        static void loopModbus();
         static long millisLastAttempt;
         static void initializeMQTT();
         static void initializeEthernet();

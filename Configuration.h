@@ -5,7 +5,7 @@
 
 #define CONFIG_SIGNATURE "PLC00"
 #define CONFIG_SIGNATURE_LENGTH 5
-#define CONFIG_MAX_LENGTH 100
+#define CONFIG_MAX_LENGTH 20
 
 namespace Configuration {
     enum States {
