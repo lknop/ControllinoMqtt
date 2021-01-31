@@ -46,8 +46,9 @@ class PLC {
         static Modbus modbus_master;
         static modbus_t modbus_data;
         static uint8_t modbus_state;
+        static uint8_t modbus_unit;
         static uint16_t modbus_reg;
-        static uint16_t modbus_values;
+        static uint16_t modbus_values[8];
         static uint32_t modbus_wait;
         static void initializeModbus();
         static void loopModbus();

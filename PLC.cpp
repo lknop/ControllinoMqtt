@@ -15,8 +15,11 @@
 
 #define INVALID_VALUE -99
 
-using namespace std;
+#define MODBUS_UNITS 2
+#define MODBUS_STARTID 23
+#define MODBUS_SIZE 8
 
+using namespace std;
 
 
 EthernetClient PLC::ethClient;
@@ -24,9 +27,10 @@ PubSubClient PLC::mqttClient(ethClient);
 vector<Input*> PLC::inputs;
 Modbus PLC::modbus_master(MasterModbusAddress, RS485Serial, 0);
 uint16_t PLC::modbus_reg = 0;
-modbus_t PLC::modbus_data = { .u8id = 0, .u8fct = 2, .u16RegAdd = 0, .u16CoilsNo = 16, .au16reg = &modbus_reg };
-uint16_t PLC::modbus_values = 0;
+uint16_t PLC::modbus_values[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+modbus_t PLC::modbus_data = { .u8id = 0, .u8fct = 2, .u16RegAdd = 0, .u16CoilsNo = MODBUS_SIZE, .au16reg = &modbus_reg };
 uint8_t PLC::modbus_state = 0;
+uint8_t PLC::modbus_unit = 0;
 uint32_t PLC::modbus_wait = 0;
 
 long PLC::millisLastAttempt = 0;
@@ -55,7 +59,7 @@ void PLC::setup() {
 }
  
 void PLC::loop() {
-    // DEBUG_PRINT("loop start");
+    DEBUG_PRINT("loop start");
 	
 	Configuration::loop();
 	
@@ -76,19 +80,18 @@ void PLC::loop() {
 		loopModbus();
 	}
 	
-    // DEBUG_PRINT("loop end");
+    DEBUG_PRINT("loop end");
 }
 
 void PLC::initializeModbus() {
-	  modbus_data.u8id = 4; // slave address
-
 	  modbus_master.begin( 19200 ); // baud-rate at 19200
 	  modbus_master.setTimeOut( 5000 ); // if there is no answer in 5000 ms, roll over
+	  modbus_data.u8id = MODBUS_STARTID;
 	  modbus_wait = millis() + 1000;
 }
 
 void PLC::loopModbus() {
-  char subscribe_topic[5];
+  char subscribe_topic[6];
   switch(PLC::modbus_state) {
 	  case 0:
 		  if (millis() > modbus_wait) {
@@ -96,6 +99,7 @@ void PLC::loopModbus() {
 		  }
 		  break;
 	  case 1:
+
 		  modbus_master.query(modbus_data); // send query (only once)
 		  modbus_state++;
 		  break;
@@ -104,17 +108,21 @@ void PLC::loopModbus() {
 		  if (modbus_master.getState() == COM_IDLE)
 		  {
 			 uint16_t current_modbus = modbus_reg;
-			 uint16_t mask = current_modbus ^ modbus_values;
+			 Serial.print(modbus_unit);
+			 Serial.print(" ");
+			 Serial.println(current_modbus);
+			 uint16_t mask = current_modbus ^ modbus_values[modbus_unit];
 			 if (mask) {
-				 for (uint8_t i = 0; i < 16; i++) {
+				 for (uint8_t i = 0; i < MODBUS_SIZE; i++) {
 					 if (bitRead(mask, i)) {
-						 sprintf(subscribe_topic, "M%d", i);
+						 sprintf(subscribe_topic, "M%d", i + modbus_unit * MODBUS_SIZE );
 						 PLC::publish(subscribe_topic, Configuration::state_Topic, bitRead(current_modbus, i) ? "up" : "down");
 					 }
 				 }
-				 modbus_values = current_modbus;
+				 modbus_values[modbus_unit] = current_modbus;
 			 }
 			 modbus_state = 0;
+			 modbus_unit = (modbus_unit + 1) % MODBUS_UNITS;
 			 modbus_wait = millis() + MODBUS_INTERVAL;
 		  }
 		  break;
@@ -130,7 +138,7 @@ void PLC::initializeMQTT() {
 }
 
 void PLC::initializeEthernet() {
-  INFO_PRINT("Initializing ethernet...");
+  INFO_PRINT("Initializing Ethernet...");
   IPAddress ip(Configuration::ip[0], Configuration::ip[1], Configuration::ip[2], Configuration::ip[3]);
 
 #ifdef SIMULATED_CONTROLLINO
@@ -338,17 +346,14 @@ void PLC::publishInput(int pin, const char * event)
 	typename vector<Input*>::iterator Iter;
 	
 	for (Iter = inputs.begin() ; Iter != inputs.end() ; Iter++ )  
-			{   
-				if((*Iter)->button->pin()==pin) 
-				{
-					PLC::publish((*Iter)->topic, Configuration::state_Topic, event);
-					break;
-				}
-			}
+	{
+		if((*Iter)->button->pin()==pin)
+		{
+			PLC::publish((*Iter)->topic, Configuration::state_Topic, event);
+			break;
+		}
+	}
 }
-
-
-
 
 
 int PLC::getValue(byte* payload, unsigned int length) {
