@@ -2,7 +2,6 @@
 #include <avr/wdt.h>
 #include <EEPROM.h>
 
-
    
 namespace Configuration {
     
@@ -20,6 +19,8 @@ namespace Configuration {
     bool isValid = false;
     bool isConfiguring = false;
     char signature[CONFIG_SIGNATURE_LENGTH+1] = CONFIG_SIGNATURE;
+    byte modbus_address = 1;
+    byte modbus_count = 0;
 
     
     void save() {
@@ -32,6 +33,8 @@ namespace Configuration {
         saveByteArray(currentAddress, mac, 6);
         saveByteArray(currentAddress, ip, 4);
         saveByteArray(currentAddress, server, 4);
+        EEPROM.update(currentAddress++, modbus_address);
+        EEPROM.update(currentAddress++, modbus_count);
         EEPROM.put(currentAddress, port);
     }
    
@@ -58,7 +61,7 @@ namespace Configuration {
         }
         offset +=i;
     }
-    
+
     void readCharArray(int &offset, char* charArray, int maxLength){
         String aux("");
         int i = 0;
@@ -108,6 +111,8 @@ namespace Configuration {
             readByteArray(currentAddress, mac, 6);
             readByteArray(currentAddress, ip, 4);
             readByteArray(currentAddress, server, 4);
+            EEPROM.get(currentAddress++, modbus_address);
+            EEPROM.get(currentAddress++, modbus_count);
             EEPROM.get(currentAddress, port);
             Serial.println("OK");
         }
@@ -169,9 +174,19 @@ namespace Configuration {
         Serial.print(F("9: Log Topic => ("));
         Serial.print(log_Topic);  
         Serial.println(F(")"));
-                                                 
+
+        Serial.print(F("10: Modbus address => ("));
+        Serial.print(modbus_address);
+        Serial.println(F(")"));
+
+        Serial.print(F("11: Modbus unit count => ("));
+        Serial.print(modbus_count);
+        Serial.println(F(")"));
+
         Serial.println();
         Serial.println(F("X: Exit"));
+        Serial.println();
+        Serial.println(F("R: Reboot"));
         Serial.println();
         Serial.println (F("Enter option: "));
         state = menuState;
@@ -198,6 +213,10 @@ namespace Configuration {
             setStateTopicState();
         } else if(readString == "9") {
             setLogTopicState();
+        } else if(readString == "10") {
+			setModbusAddressState();
+        } else if(readString == "11") {
+			setModbusCountState();
         } else if(readString == "R") {
               save();
               wdt_enable(WDTO_60MS);
@@ -255,8 +274,28 @@ namespace Configuration {
    void logTopic(String readString){
         readString.toCharArray(log_Topic,readString.length()+1);
         setMenuState();
+   }
+
+   void setModbusAddressState() {
+        Serial.print (F("Enter starting modbus address: "));
+        state = modbusAddressState;
+   }
+
+   void modbusAddress(String readString){
+	    modbus_address = readString.toInt();
+        setMenuState();
+   }
+
+   void setModbusCountState() {
+        Serial.print (F("Enter modbus unit count: "));
+        state = modbusCountState;
+   }
+
+   void modbusCount(String readString){
+	    modbus_count = readString.toInt();
+        setMenuState();
    } 
-    
+
    void setIPState() {
         Serial.print (F("Enter IP: (nnn.nnn.nnn.nnn)"));
         state = IPState;
@@ -351,7 +390,13 @@ namespace Configuration {
                        break;
                     case logTopicState:
                        logTopic(readString);
-                        break;
+                       break;
+                    case modbusAddressState:
+					   modbusAddress(readString);
+					   break;
+                    case modbusCountState:
+					   modbusCount(readString);
+					   break;
                    default:
                         setInitialState();
                         break;

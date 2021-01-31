@@ -15,9 +15,7 @@
 
 #define INVALID_VALUE -99
 
-#define MODBUS_UNITS 2
-#define MODBUS_STARTID 23
-#define MODBUS_SIZE 8
+#define MODBUS_SIZE 16
 
 using namespace std;
 
@@ -86,11 +84,13 @@ void PLC::loop() {
 void PLC::initializeModbus() {
 	  modbus_master.begin( 19200 ); // baud-rate at 19200
 	  modbus_master.setTimeOut( 5000 ); // if there is no answer in 5000 ms, roll over
-	  modbus_data.u8id = MODBUS_STARTID;
 	  modbus_wait = millis() + 1000;
 }
 
 void PLC::loopModbus() {
+  if (Configuration::modbus_count == 0) {
+	  return;
+  }
   char subscribe_topic[6];
   switch(PLC::modbus_state) {
 	  case 0:
@@ -99,7 +99,7 @@ void PLC::loopModbus() {
 		  }
 		  break;
 	  case 1:
-
+		  modbus_data.u8id = Configuration::modbus_address + modbus_unit;
 		  modbus_master.query(modbus_data); // send query (only once)
 		  modbus_state++;
 		  break;
@@ -108,26 +108,23 @@ void PLC::loopModbus() {
 		  if (modbus_master.getState() == COM_IDLE)
 		  {
 			 uint16_t current_modbus = modbus_reg;
-			 Serial.print(modbus_unit);
-			 Serial.print(" ");
-			 Serial.println(current_modbus);
 			 uint16_t mask = current_modbus ^ modbus_values[modbus_unit];
 			 if (mask) {
 				 for (uint8_t i = 0; i < MODBUS_SIZE; i++) {
 					 if (bitRead(mask, i)) {
 						 sprintf(subscribe_topic, "M%d", i + modbus_unit * MODBUS_SIZE );
+						 INFO_PRINT_PARAM("Publishing ", subscribe_topic);
 						 PLC::publish(subscribe_topic, Configuration::state_Topic, bitRead(current_modbus, i) ? "up" : "down");
 					 }
 				 }
 				 modbus_values[modbus_unit] = current_modbus;
 			 }
 			 modbus_state = 0;
-			 modbus_unit = (modbus_unit + 1) % MODBUS_UNITS;
+			 modbus_unit = (modbus_unit + 1) % Configuration::modbus_count;
 			 modbus_wait = millis() + MODBUS_INTERVAL;
 		  }
 		  break;
 	}
-
 }
 
 void PLC::initializeMQTT() {

@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define CONFIG_SIGNATURE "PLC00"
+#define CONFIG_SIGNATURE "PLC01"
 #define CONFIG_SIGNATURE_LENGTH 5
 #define CONFIG_MAX_LENGTH 20
 
@@ -20,7 +20,9 @@ namespace Configuration {
         rootTopicState,
         commandTopicState,
         stateTopicState,
-        logTopicState
+        logTopicState,
+		modbusAddressState,
+		modbusCountState
     };
 
     extern char PLC_Topic[CONFIG_MAX_LENGTH];
@@ -35,6 +37,8 @@ namespace Configuration {
     extern bool isValid;
     extern bool isConfiguring;
     extern char signature[CONFIG_SIGNATURE_LENGTH+1];
+    extern byte modbus_address;
+    extern byte modbus_count;
     
     void initial(String readedString);
     void menu(String readedString);
@@ -47,6 +51,8 @@ namespace Configuration {
     void commandTopic(String readedString);
     void stateTopic(String readedString);
     void logTopic(String readedString);
+    void modbusAddress(String readString);
+    void modbusCount(String readString);
     void setMenuState();
     void setInitialState();
     void setPLCTopicState();
@@ -58,6 +64,8 @@ namespace Configuration {
     void setCommandTopicState();
     void setStateTopicState();
     void setLogTopicState();
+    void setModbusAddressState();
+    void setModbusCountState();
     void loop();
     
     void save();
@@ -65,7 +73,7 @@ namespace Configuration {
     void saveByteArray(int &offset, byte* byteArray, int length);
     void load();
     void readCharArray(int &offset, char* charArray, int maxLength);
-    void saveByteArray(int &offset, byte* byteArrayv, int length);
+    void readByteArray(int &offset, byte* byteArray, int length);
 }
 
 #endif
