@@ -480,7 +480,7 @@ int8_t Modbus::poll()
     // transfer Serial buffer frame to auBuffer
     u8lastRec = 0;
     int8_t i8state = getRxBuffer();
-    if (i8state < 7)
+    if (i8state < 6)
     {
         u8state = COM_IDLE;
         u16errCnt++;
