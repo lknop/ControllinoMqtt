@@ -17,7 +17,7 @@ namespace Configuration {
     byte mac[6]  = {0x1A, 0x6B, 0xE7, 0x45, 0xB9, 0x26}; 
     byte ip[4] = {192, 168, 1, 20}; 
     byte server[4] = {192, 168, 1, 10}; 
-    int port = 1883;
+    uint16_t port = 1883;
     bool isValid = false;
     bool isConfiguring = false;
     char signature[CONFIG_SIGNATURE_LENGTH+1] = CONFIG_SIGNATURE;
@@ -39,14 +39,14 @@ namespace Configuration {
         saveByteArray(currentAddress, server, 4);
         EEPROM.update(currentAddress++, modbus_address);
         EEPROM.update(currentAddress++, modbus_count);
-        EEPROM.put(currentAddress, port);
+        EEPROM.update(currentAddress++, port & 0xff);
+        EEPROM.update(currentAddress++, port >> 8);
     }
    
     void saveCharArray(int &offset, char* charArray){
         int i = 0;
         bool finish = false;
         while(!finish) {
-            Serial.println(charArray[i],DEC);
             EEPROM.update(offset+i,charArray[i]);
             if(!charArray[i]) {
                 finish = true;
@@ -119,7 +119,7 @@ namespace Configuration {
             readByteArray(currentAddress, server, 4);
             EEPROM.get(currentAddress++, modbus_address);
             EEPROM.get(currentAddress++, modbus_count);
-            EEPROM.get(currentAddress, port);
+            EEPROM.get(currentAddress++, port);
             Serial.println("OK");
         }
    }
@@ -237,6 +237,7 @@ namespace Configuration {
 			setPasswordState();
         } else if(readString == "R") {
               save();
+              Serial.println(F("Saved"));
               wdt_enable(WDTO_60MS);
               while(1) {}
         } else {
@@ -335,7 +336,7 @@ namespace Configuration {
    }
 
    void setIPState() {
-        Serial.print (F("Enter IP: (nnn.nnn.nnn.nnn)"));
+        Serial.print (F("Enter IP: (nnn.nnn.nnn.nnn)\n(or 000.000.000.000 for DHCP)"));
         state = IPState;
    }  
  

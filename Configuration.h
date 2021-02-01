@@ -37,7 +37,7 @@ namespace Configuration {
     extern byte mac[6];
     extern byte ip[4];
     extern byte server[4];
-    extern int port;
+    extern uint16_t port;
     extern bool isValid;
     extern bool isConfiguring;
     extern char signature[CONFIG_SIGNATURE_LENGTH+1];
