@@ -15,8 +15,6 @@
 
 #define INVALID_VALUE -99
 
-#define MODBUS_SIZE 16
-
 using namespace std;
 
 
@@ -114,7 +112,7 @@ void PLC::loopModbus() {
 					 if (bitRead(mask, i)) {
 						 sprintf(subscribe_topic, "M%d", i + modbus_unit * MODBUS_SIZE );
 						 INFO_PRINT_PARAM("Publishing ", subscribe_topic);
-						 PLC::publish(subscribe_topic, Configuration::state_Topic, bitRead(current_modbus, i) ? "up" : "down");
+						 PLC::publish(subscribe_topic, Configuration::state_Topic, bitRead(current_modbus, i) ? ONSTATE : OFFSTATE);
 					 }
 				 }
 				 modbus_values[modbus_unit] = current_modbus;
@@ -206,7 +204,12 @@ bool PLC::reconnect() {
     // Loop until we're reconnected
     INFO_PRINT("Connecting MQTT server...");
     // Attempt to connect
-    if (mqttClient.connect(Configuration::PLC_Topic)) {
+
+    bool connected = (strlen(Configuration::username) == 0) ?
+        mqttClient.connect(Configuration::PLC_Topic) :
+        mqttClient.connect(Configuration::PLC_Topic, Configuration::username, Configuration::password);
+
+    if (connected) {
       // Once connected, publish an announcement...
         log("Connected!");
         // ... and resubscribe
@@ -235,7 +238,6 @@ void PLC::log(const char* errorMsg)
       mqttClient.publish(log_Topic, errorMsg);
       INFO_PRINT_PARAM("Published ", errorMsg);
       INFO_PRINT_PARAM("to topic ", log_Topic);
-
     }
 }
 
@@ -299,7 +301,7 @@ void PLC::updateOutput(char* outputName,int newState) {
     pinMode(pin,OUTPUT);
     digitalWrite(pin, newState);
 
-    PLC::publish(outputName, Configuration::state_Topic, newState ? "up" : "down");
+    PLC::publish(outputName, Configuration::state_Topic, newState ? ONSTATE : OFFSTATE);
 }
 
 void PLC::publish(const char* portName,const char* messageType, const char* payload ){
@@ -328,13 +330,13 @@ void PLC::onButtonClick(EventArgs* e){
 
 void PLC::onButtonDown(EventArgs* e){
 	INFO_PRINT_PARAM("Down!", ((Button*)e->sender)->pin());
-	publishInput(((Button*)e->sender)->pin(), "down");
+	publishInput(((Button*)e->sender)->pin(), OFFSTATE);
 	
 }
 
 void PLC::onButtonUp(EventArgs* e){
 	INFO_PRINT_PARAM("Up!", ((Button*)e->sender)->pin());
-	publishInput(((Button*)e->sender)->pin(), "up");
+	publishInput(((Button*)e->sender)->pin(), ONSTATE);
 	
 }
 

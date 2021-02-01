@@ -12,6 +12,8 @@ namespace Configuration {
     char command_Topic[CONFIG_MAX_LENGTH] = "command";
     char state_Topic[CONFIG_MAX_LENGTH] = "state";
     char log_Topic[CONFIG_MAX_LENGTH]= "log";
+    char username[CONFIG_MAX_LENGTH]= "mqttuser";
+    char password[CONFIG_MAX_LENGTH]= "mqttpass";
     byte mac[6]  = {0x1A, 0x6B, 0xE7, 0x45, 0xB9, 0x26}; 
     byte ip[4] = {192, 168, 1, 20}; 
     byte server[4] = {192, 168, 1, 10}; 
@@ -30,6 +32,8 @@ namespace Configuration {
         saveCharArray(currentAddress, root_Topic);
         saveCharArray(currentAddress, command_Topic);
         saveCharArray(currentAddress, log_Topic);
+        saveCharArray(currentAddress, username);
+        saveCharArray(currentAddress, password);
         saveByteArray(currentAddress, mac, 6);
         saveByteArray(currentAddress, ip, 4);
         saveByteArray(currentAddress, server, 4);
@@ -108,6 +112,8 @@ namespace Configuration {
             readCharArray(currentAddress, root_Topic, CONFIG_MAX_LENGTH);
             readCharArray(currentAddress, command_Topic, CONFIG_MAX_LENGTH);
             readCharArray(currentAddress, log_Topic, CONFIG_MAX_LENGTH);
+            readCharArray(currentAddress, username, CONFIG_MAX_LENGTH);
+            readCharArray(currentAddress, password, CONFIG_MAX_LENGTH);
             readByteArray(currentAddress, mac, 6);
             readByteArray(currentAddress, ip, 4);
             readByteArray(currentAddress, server, 4);
@@ -183,6 +189,14 @@ namespace Configuration {
         Serial.print(modbus_count);
         Serial.println(F(")"));
 
+        Serial.print(F("12: MQTT username => ("));
+        Serial.print(username);
+        Serial.println(F(")"));
+
+        Serial.print(F("13: MQTT password => ("));
+        Serial.print(password);
+        Serial.println(F(")"));
+
         Serial.println();
         Serial.println(F("X: Exit"));
         Serial.println();
@@ -217,6 +231,10 @@ namespace Configuration {
 			setModbusAddressState();
         } else if(readString == "11") {
 			setModbusCountState();
+        } else if(readString == "12") {
+			setUsernameState();
+        } else if(readString == "13") {
+			setPasswordState();
         } else if(readString == "R") {
               save();
               wdt_enable(WDTO_60MS);
@@ -295,6 +313,26 @@ namespace Configuration {
 	    modbus_count = readString.toInt();
         setMenuState();
    } 
+
+   void setUsernameState() {
+        Serial.print (F("Enter mqtt username (empty for no auth): "));
+        state = usernameState;
+   }
+
+   void user(String readString){
+        readString.toCharArray(username,readString.length()+1);
+        setMenuState();
+   }
+
+   void setPasswordState() {
+        Serial.print (F("Enter mqtt password: "));
+        state = passwordState;
+   }
+
+   void pass(String readString){
+        readString.toCharArray(password,readString.length()+1);
+        setMenuState();
+   }
 
    void setIPState() {
         Serial.print (F("Enter IP: (nnn.nnn.nnn.nnn)"));
@@ -396,6 +434,12 @@ namespace Configuration {
 					   break;
                     case modbusCountState:
 					   modbusCount(readString);
+					   break;
+                    case usernameState:
+					   user(readString);
+					   break;
+                    case passwordState:
+					   pass(readString);
 					   break;
                    default:
                         setInitialState();

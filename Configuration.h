@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define CONFIG_SIGNATURE "PLC01"
+#define CONFIG_SIGNATURE "PLC02"
 #define CONFIG_SIGNATURE_LENGTH 5
 #define CONFIG_MAX_LENGTH 20
 
@@ -22,7 +22,9 @@ namespace Configuration {
         stateTopicState,
         logTopicState,
 		modbusAddressState,
-		modbusCountState
+		modbusCountState,
+		usernameState,
+		passwordState
     };
 
     extern char PLC_Topic[CONFIG_MAX_LENGTH];
@@ -30,6 +32,8 @@ namespace Configuration {
     extern char command_Topic[CONFIG_MAX_LENGTH];
     extern char state_Topic[CONFIG_MAX_LENGTH];
     extern char log_Topic[CONFIG_MAX_LENGTH];
+    extern char username[CONFIG_MAX_LENGTH];
+    extern char password[CONFIG_MAX_LENGTH];
     extern byte mac[6];
     extern byte ip[4];
     extern byte server[4];
@@ -66,6 +70,10 @@ namespace Configuration {
     void setLogTopicState();
     void setModbusAddressState();
     void setModbusCountState();
+    void setUsernameState();
+    void user();
+    void setPasswordState();
+    void pass();
     void loop();
     
     void save();

@@ -15,11 +15,13 @@
 
 #define MasterModbusAddress  0
 #define MODBUS_INTERVAL 100
+#define MODBUS_SIZE 8
 
 // This MACRO defines number of the com port that is used for RS 485 interface.
 // For MAXI and MEGA RS485 is reserved UART Serial3.
 #define RS485Serial     3
-
+#define ONSTATE "on"
+#define OFFSTATE "off"
 
 using namespace std;
 
