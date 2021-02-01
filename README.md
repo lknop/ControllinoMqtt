@@ -9,5 +9,10 @@ Structure was changed to support compilation both by [Sloeber](https://eclipse.b
 
 TODO: 
 - [x] support digital outputs for external relays
-- [ ] support MODBUS for external inputs, external relays
+- [x] support MODBUS for external inputs
+- [ ] support MODBUS for external relays
+- [x] multiple MODBUS modules
+- [x] configurable MODBUS addressing
+- [x] mqtt authentication
+- [ ] mqtt auto discovery topics for home assistant 
 
