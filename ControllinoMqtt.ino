@@ -12,7 +12,7 @@ static uint8_t mode = 0;
 
 void setup()
 {
-	pinMode(RXD2, INPUT_PULLUP);
+    pinMode(RXD2, INPUT_PULLUP);
     Serial.begin(115200);
     mode = digitalRead(RXD2);
 
@@ -25,7 +25,7 @@ void setup()
 
 void loop()
 {
-/*	if (digitalRead(RXD2) != mode) {
+	if (digitalRead(RXD2) != mode) {
 		wdt_enable(WDTO_60MS);
 		while(1) {}
 	}
@@ -33,8 +33,7 @@ void loop()
 		fallbackLogic();
 	} else {
 		PLC::loop();
-	}*/
-	PLC::loop();
+	}
 }
 
 void fallbackLogic() {

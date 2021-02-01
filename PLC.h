@@ -14,7 +14,7 @@
 #include "ModbusRtu.h"
 
 #define MasterModbusAddress  0
-#define MODBUS_INTERVAL 100
+#define MODBUS_INTERVAL 80
 #define MODBUS_SIZE 8
 
 // This MACRO defines number of the com port that is used for RS 485 interface.

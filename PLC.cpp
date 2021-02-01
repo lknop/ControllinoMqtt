@@ -89,7 +89,7 @@ void PLC::loopModbus() {
   if (Configuration::modbus_count == 0) {
 	  return;
   }
-  char subscribe_topic[6];
+  char subscribe_topic[8];
   switch(PLC::modbus_state) {
 	  case 0:
 		  if (millis() > modbus_wait) {
@@ -110,7 +110,7 @@ void PLC::loopModbus() {
 			 if (mask) {
 				 for (uint8_t i = 0; i < MODBUS_SIZE; i++) {
 					 if (bitRead(mask, i)) {
-						 sprintf(subscribe_topic, "M%d", i + modbus_unit * MODBUS_SIZE );
+						 sprintf(subscribe_topic, "M%dI%d", modbus_unit + Configuration::modbus_address, i + 1);
 						 INFO_PRINT_PARAM("Publishing ", subscribe_topic);
 						 PLC::publish(subscribe_topic, Configuration::state_Topic, bitRead(current_modbus, i) ? ONSTATE : OFFSTATE);
 					 }
