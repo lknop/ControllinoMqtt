@@ -110,7 +110,7 @@ void PLC::loopModbus() {
 			 if (mask) {
 				 for (uint8_t i = 0; i < MODBUS_SIZE; i++) {
 					 if (bitRead(mask, i)) {
-						 sprintf(subscribe_topic, "M%dI%d", modbus_unit + Configuration::modbus_address, i + 1);
+						 sprintf_P(subscribe_topic, PSTR("M%dI%d"), modbus_unit + Configuration::modbus_address, i + 1);
 						 INFO_PRINT_PARAM("Publishing ", subscribe_topic);
 						 PLC::publish(subscribe_topic, Configuration::state_Topic, bitRead(current_modbus, i) ? ONSTATE : OFFSTATE);
 					 }
@@ -184,8 +184,8 @@ void PLC::initializeInputs() {
 	for(int i=0;i<=18;i++) {
 		DEBUG_PRINT_PARAM("Input  ", i);
 		DEBUG_PRINT_PARAM(" pin ", pins[i]);
-		Button *button = new Button(pins[i] , LOW, true, &PLC::onButtonClick, 10);
-		DEBUG_PRINT_PARAM("Handlers  ", i)
+		Button *button = new Button(pins[i] , LOW, true, 10);
+		DEBUG_PRINT_PARAM("Handlers  ", i);
 		button->down()->addHandler(&PLC::onButtonDown);
 		button->up()->addHandler(&PLC::onButtonUp);
 		DEBUG_PRINT_PARAM("Creating input  ", i)
@@ -212,10 +212,11 @@ bool PLC::reconnect() {
     if (connected) {
       // Once connected, publish an announcement...
         log("Connected!");
+        runDiscovery();
         // ... and resubscribe
 		int topicLength = strlen(Configuration::root_Topic) +  strlen(Configuration::PLC_Topic)+4;
 		char subscribe_Topic[topicLength]; 
-        sprintf(subscribe_Topic, "%s/%s/#", Configuration::root_Topic, Configuration::PLC_Topic);
+        sprintf_P(subscribe_Topic, PSTR("%s/%s/#"), Configuration::root_Topic, Configuration::PLC_Topic);
         mqttClient.subscribe(subscribe_Topic);
         INFO_PRINT_PARAM("Subscribed to: ", subscribe_Topic);
         res = true;
@@ -228,13 +229,33 @@ bool PLC::reconnect() {
     return res;
 }
 
+void PLC::runDiscovery()
+{
+	char config_msg[200];
+	char name[8];
+	char mac[7];
+	char config_topic[50];
+	sprintf_P(mac, PSTR("%x%x%x%x%x%x"), Configuration::mac[0], Configuration::mac[1], Configuration::mac[2],
+			Configuration::mac[3], Configuration::mac[4], Configuration::mac[5]);
+
+	for (int m = 0; m < Configuration::modbus_count; m++) {
+		for (int i = 0; i < MODBUS_SIZE; i++) {
+			sprintf_P(name, PSTR("M%dI%d"), m + Configuration::modbus_address, i + 1);
+			sprintf_P(config_msg, HASS_DISCOVERY, name, mac, name, Configuration::root_Topic,
+		            Configuration::PLC_Topic, name, Configuration::state_Topic, mac);
+			sprintf_P(config_topic, PSTR("homeassistant/binary_sensor/%s/config"), name);
+			mqttClient.publish(config_topic, config_msg, true);
+		}
+	}
+}
+
 void PLC::log(const char* errorMsg)
 {
     INFO_PRINT_PARAM("LOG", errorMsg);
     if (mqttClient.connected()) {
       int topicLength = strlen(Configuration::root_Topic) +  strlen(Configuration::log_Topic)+ strlen(Configuration::PLC_Topic)+3;
       char log_Topic[topicLength];
-      sprintf(log_Topic, "%s/%s/%s", Configuration::root_Topic, Configuration::PLC_Topic, Configuration::log_Topic);
+      sprintf_P(log_Topic, PSTR("%s/%s/%s"), Configuration::root_Topic, Configuration::PLC_Topic, Configuration::log_Topic);
       mqttClient.publish(log_Topic, errorMsg);
       INFO_PRINT_PARAM("Published ", errorMsg);
       INFO_PRINT_PARAM("to topic ", log_Topic);
@@ -272,7 +293,7 @@ bool PLC::getOuput(char* topic,char* ouput) {
     }
 	int topicLength = strlen(Configuration::root_Topic) +  strlen(Configuration::PLC_Topic)+4;
 	char subscribe_Topic[topicLength]; 
-	sprintf(subscribe_Topic, "%s/%s/#", Configuration::root_Topic,  Configuration::PLC_Topic);
+	sprintf_P(subscribe_Topic, PSTR("%s/%s/#"), Configuration::root_Topic,  Configuration::PLC_Topic);
     String sOutput = sTopic.substring(strlen(subscribe_Topic)-1);
     sOutput = sOutput.substring(0,sOutput.indexOf("/"));
   
@@ -320,12 +341,6 @@ void PLC::publish(const char* portName,const char* messageType, const char* payl
 	topicString.toCharArray(topic, topicLength); 
 
 	mqttClient.publish(topic, payload);  
-}
-
-void PLC::onButtonClick(EventArgs* e){
-	INFO_PRINT_PARAM("Click!", ((Button*)e->sender)->pin());
-	publishInput(((Button*)e->sender)->pin(), "click");
-	
 }
 
 void PLC::onButtonDown(EventArgs* e){

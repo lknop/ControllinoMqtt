@@ -20,8 +20,11 @@
 // This MACRO defines number of the com port that is used for RS 485 interface.
 // For MAXI and MEGA RS485 is reserved UART Serial3.
 #define RS485Serial     3
-#define ONSTATE "on"
-#define OFFSTATE "off"
+#define ONSTATE "ON"
+#define OFFSTATE "OFF"
+
+#define HASS_DISCOVERY "{\"name\":\"%s\",\"uniq_id\":\"%s_%s\", \
+\"stat_t\":\"%s/%s/%s/%s\",\"dev\":{\"mf\":\"lino\",\"ids\":[\"lino\",\"%s\"],\"name\":\"lino\"}"
 
 using namespace std;
 
@@ -59,6 +62,7 @@ class PLC {
         static void initializeEthernet();
         static void initializeInputs();
         static bool reconnect();
+        static void runDiscovery();
         static void log(const char* errorMsg);
         static void onMQTTMessage(char* topic, byte* payload, unsigned int length) ;
         static bool getOuput(char* topic,char* ouput);
