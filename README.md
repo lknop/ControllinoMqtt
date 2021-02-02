@@ -14,6 +14,6 @@ TODO:
 - [x] multiple MODBUS modules
 - [x] configurable MODBUS addressing
 - [x] mqtt authentication
-- [ ] mqtt auto discovery topics for home assistant
-- [ ] drop Button, FastDelegate, Timer and Event classes to reduce RAM usage
+- [x] mqtt auto discovery topics for home assistant
+- [x] drop Button, FastDelegate, Timer and Event classes to reduce RAM usage and simplify code
 
