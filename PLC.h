@@ -21,8 +21,12 @@
 #define ONSTATE "ON"
 #define OFFSTATE "OFF"
 
-#define HASS_DISCOVERY "{\"name\":\"%s\",\"uniq_id\":\"%s_%s\", \
+#define HASS_DISCOVERY_INPUT "{\"name\":\"%s\",\"uniq_id\":\"%s_%s\", \
 \"stat_t\":\"%s/%s/%s/%s\",\"dev\":{\"mf\":\"lino\",\"ids\":[\"lino\",\"%s\"],\"name\":\"lino\"}}"
+
+#define HASS_DISCOVERY_OUTPUT "{ \"~\": \"%s/%s/%s\", \"name\":\"%s\",\"uniq_id\":\"%s_%s\", \
+\"cmd_t\":\"~/command\", \"stat_t\":\"~/%s\",\"dev\":{\"mf\":\"lino\",\"ids\":[\"lino\",\"%s\"],\"name\":\"lino\"}}"
+
 
 using namespace std;
 

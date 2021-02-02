@@ -7,8 +7,6 @@
 #include "DebugUtils.h"
 #include "Configuration.h"
 #include "PLC.h"
-#include "MemoryFree.h"
-
 
 #define INVALID_VALUE -99
 
@@ -146,7 +144,6 @@ void PLC::loopModbus() {
 		  {
 			 uint16_t current_modbus = modbus_reg;
 			 uint16_t mask = current_modbus ^ modbus_values[modbus_unit];
-			 Serial.println(current_modbus);
 			 if (mask) {
 				 for (uint8_t i = 0; i < MODBUS_SIZE; i++) {
 					 if (bitRead(mask, i)) {
@@ -256,25 +253,50 @@ bool PLC::reconnect() {
 
 void PLC::runDiscovery()
 {
-	Serial.println(freeMemory());
 	char config_msg[250];
 	char name[8];
 	char mac[15];
 	char config_topic[50];
 	sprintf_P(mac, PSTR("%x%x%x%x%x%x"), Configuration::mac[0], Configuration::mac[1], Configuration::mac[2],
 			Configuration::mac[3], Configuration::mac[4], Configuration::mac[5]);
-	Serial.println(mac);
 
 	for (int m = 0; m < Configuration::modbus_count; m++) {
 		for (int i = 0; i < MODBUS_SIZE; i++) {
 			sprintf_P(name, PSTR("M%dI%d"), m + Configuration::modbus_address, i + 1);
-			sprintf_P(config_msg, PSTR(HASS_DISCOVERY), name, mac, name, Configuration::root_Topic,
+			sprintf_P(config_msg, PSTR(HASS_DISCOVERY_INPUT), name, mac, name, Configuration::root_Topic,
 		            Configuration::PLC_Topic, name, Configuration::state_Topic, mac);
 			sprintf_P(config_topic, PSTR("homeassistant/binary_sensor/%s/config"), name);
-			Serial.println(config_msg);
+			INFO_PRINT_PARAM("Sending ", config_msg);
 			mqttClient.publish(config_topic, config_msg, true);
 		}
 	}
+
+	for (int i = 0; i < 19; i++) {
+		sprintf_P(config_msg, PSTR(HASS_DISCOVERY_INPUT), names[i], mac, names[i], Configuration::root_Topic,
+				Configuration::PLC_Topic, names[i], Configuration::state_Topic, mac);
+		sprintf_P(config_topic, PSTR("homeassistant/binary_sensor/%s/config"), names[i]);
+		INFO_PRINT_PARAM("Sending ", config_msg);
+		mqttClient.publish(config_topic, config_msg, true);
+	}
+
+	for (int i = 0; i < 16; i++) {
+			sprintf_P(name, PSTR("R%d"), i);
+			sprintf_P(config_msg, PSTR(HASS_DISCOVERY_OUTPUT), Configuration::root_Topic,
+					Configuration::PLC_Topic, name, name, mac, name, Configuration::state_Topic, mac);
+			sprintf_P(config_topic, PSTR("homeassistant/switch/%s/config"), name);
+			INFO_PRINT_PARAM("Sending ", config_msg);
+			mqttClient.publish(config_topic, config_msg, true);
+	}
+
+	for (int i = 0; i < 24; i++) {
+			sprintf_P(name, PSTR("D%d"), i);
+			sprintf_P(config_msg, PSTR(HASS_DISCOVERY_OUTPUT), Configuration::root_Topic,
+					Configuration::PLC_Topic, name, name, mac, name, Configuration::state_Topic, mac);
+			sprintf_P(config_topic, PSTR("homeassistant/switch/%s/config"), name);
+			INFO_PRINT_PARAM("Sending ", config_msg);
+			mqttClient.publish(config_topic, config_msg, true);
+	}
+
 }
 
 void PLC::log(const char* errorMsg)
@@ -304,7 +326,7 @@ void PLC::onMQTTMessage(char* topic, byte* payload, unsigned int length) {
         
         int newState = getValue(payload, length);
         
-        if(command[0]=='R' || command[0]=='D') {
+        if (newState != INVALID_VALUE && (command[0]=='R' || command[0]=='D')) {
             updateOutput(command, newState);
         }
 
@@ -341,7 +363,7 @@ void PLC::updateOutput(char* outputName,int newState) {
       pin = CONTROLLINO_D0 + outputNumber;
     } else if (outputName[0] == 'D' && outputNumber >=12 && outputNumber<20) {
       pin = CONTROLLINO_D12 + outputNumber;
-    } else if (outputName[0] == 'D' && outputNumber >=20 && outputNumber<23) {
+    } else if (outputName[0] == 'D' && outputNumber >=20 && outputNumber<24) {
       pin = CONTROLLINO_D20 + outputNumber;
     } else {
       log("Invalid output");
@@ -373,22 +395,12 @@ void PLC::publish(const char* portName,const char* messageType, const char* payl
 
 
 int PLC::getValue(byte* payload, unsigned int length) {
-    int value = INVALID_VALUE;
-    if (length==1) {
-        switch (payload[0]-'0') {
-            case 0:
-                value = LOW;
-                break;
-            case 1:
-                value = HIGH;
-                break;
-            default:
-                log("Invalid value");
-                break;
-        }
+    if (length==2 && payload[0] == 'O' && payload[1] == 'N') {
+        return HIGH;
+    } else if (length==3 && payload[0] == 'O' && payload[1] == 'F' && payload[2] == 'F') {
+        return LOW;
     }  else  {
        DEBUG_PRINT("Command ignored");
+       return INVALID_VALUE;
     }
-    
-    return value;
 }
