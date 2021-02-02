@@ -4,13 +4,10 @@
 
 #include <SPI.h>
 #include <PubSubClient.h>
-#include "Button.h"
-#include "Timer.h"
-#include "FastDelegate.h"
 #include "DebugUtils.h"
-#include <vector>
 #include "Configuration.h"
 #include "PLC.h"
+#include "MemoryFree.h"
 
 
 #define INVALID_VALUE -99
@@ -20,16 +17,33 @@ using namespace std;
 
 EthernetClient PLC::ethClient;
 PubSubClient PLC::mqttClient(ethClient);
-vector<Input*> PLC::inputs;
 Modbus PLC::modbus_master(MasterModbusAddress, RS485Serial, 0);
 uint16_t PLC::modbus_reg = 0;
 uint16_t PLC::modbus_values[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 modbus_t PLC::modbus_data = { .u8id = 0, .u8fct = 2, .u16RegAdd = 0, .u16CoilsNo = MODBUS_SIZE, .au16reg = &modbus_reg };
 uint8_t PLC::modbus_state = 0;
 uint8_t PLC::modbus_unit = 0;
-uint32_t PLC::modbus_wait = 0;
+uint32_t PLC::modbus_millis = 0;
+const char * names[19] = {"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10",
+		"A11","A12","A13","A14","A15","I16","I17","I18"};
+uint8_t PLC::pins[19] = {
+	CONTROLLINO_A0,  CONTROLLINO_A1,  CONTROLLINO_A2,
+	CONTROLLINO_A3,	 CONTROLLINO_A4,  CONTROLLINO_A5,
+	CONTROLLINO_A6,	 CONTROLLINO_A7,  CONTROLLINO_A8,
+	CONTROLLINO_A9,	 CONTROLLINO_A10, CONTROLLINO_A11,
+	CONTROLLINO_A12, CONTROLLINO_A13, CONTROLLINO_A14,
+	CONTROLLINO_A15, CONTROLLINO_I16, CONTROLLINO_I17,
+	CONTROLLINO_I18
+};
+#ifdef SIMULATED_CONTROLLINO
+uint8_t PLC::pin_values[19] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+#else
+uint8_t PLC::pin_values[19] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+#endif
+uint8_t PLC::pin_debounce[19]  = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint32_t PLC::pin_millis = 0;
 
-long PLC::millisLastAttempt = 0;
+long PLC::mqtt_millis = 0;
 
 void PLC::setup() {
 #ifdef CONTROLLINO_MEGA
@@ -62,8 +76,8 @@ void PLC::loop() {
 	if(Configuration::isValid && !Configuration::isConfiguring) {
 		bool connected  = true;
 
-		if (!mqttClient.connected() && (millisLastAttempt ==0 || ((millis() - millisLastAttempt) >= 2000))) {
-			millisLastAttempt = millis();
+		if (!mqttClient.connected() && (mqtt_millis ==0 || ((millis() - mqtt_millis) >= 2000))) {
+			mqtt_millis = millis();
 			connected = reconnect();
 		}
 
@@ -72,8 +86,8 @@ void PLC::loop() {
 		}  else {
 			INFO_PRINT("Retrying in five seconds");
 		}
-		Timer::loop();
 		loopModbus();
+		loopInputs();
 	}
 	
     DEBUG_PRINT("loop end");
@@ -82,7 +96,32 @@ void PLC::loop() {
 void PLC::initializeModbus() {
 	  modbus_master.begin( 19200 ); // baud-rate at 19200
 	  modbus_master.setTimeOut( 5000 ); // if there is no answer in 5000 ms, roll over
-	  modbus_wait = millis() + 1000;
+	  modbus_millis = millis() + 1000;
+}
+
+void PLC::loopInputs() {
+	if (millis() - pin_millis < INPUT_INTERVAL) {
+		return;
+	}
+	pin_millis = millis();
+	for (int i = 0; i < 19; i++) {
+		// Serial.println("reading " + i);
+		byte pinValue = digitalRead(pins[i]);
+		if (pinValue != pin_values[i]) {
+			pin_debounce[i] = (pin_debounce[i] << 1) | pinValue;
+			if (pin_values[i] && pin_debounce[i] == 0) {
+				pin_values[i] = 0;
+				Serial.print(names[i]);
+				Serial.println(" OFF");
+				PLC::publish(names[i], Configuration::state_Topic, OFFSTATE);
+			} else if (!pin_values[i] && pin_debounce[i] == 0xFF) {
+				pin_values[i] = 1;
+				Serial.print(names[i]);
+				Serial.println(" ON");
+				PLC::publish(names[i], Configuration::state_Topic, ONSTATE);
+			}
+		}
+	}
 }
 
 void PLC::loopModbus() {
@@ -92,7 +131,7 @@ void PLC::loopModbus() {
   char subscribe_topic[8];
   switch(PLC::modbus_state) {
 	  case 0:
-		  if (millis() > modbus_wait) {
+		  if (millis() - modbus_millis > MODBUS_INTERVAL) {
 			modbus_state++;
 		  }
 		  break;
@@ -107,6 +146,7 @@ void PLC::loopModbus() {
 		  {
 			 uint16_t current_modbus = modbus_reg;
 			 uint16_t mask = current_modbus ^ modbus_values[modbus_unit];
+			 Serial.println(current_modbus);
 			 if (mask) {
 				 for (uint8_t i = 0; i < MODBUS_SIZE; i++) {
 					 if (bitRead(mask, i)) {
@@ -119,7 +159,7 @@ void PLC::loopModbus() {
 			 }
 			 modbus_state = 0;
 			 modbus_unit = (modbus_unit + 1) % Configuration::modbus_count;
-			 modbus_wait = millis() + MODBUS_INTERVAL;
+			 modbus_millis = millis();
 		  }
 		  break;
 	}
@@ -169,33 +209,18 @@ void PLC::initializeEthernet() {
 
 void PLC::initializeInputs() {  
 	INFO_PRINT("Initializing inputs...");
-	const char * names[19] = {"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10",
-			"A11","A12","A13","A14","A15","I16","I17","I18"};
-	byte pins[19] = {
-		CONTROLLINO_A0,  CONTROLLINO_A1,  CONTROLLINO_A2,
-		CONTROLLINO_A3,	 CONTROLLINO_A4,  CONTROLLINO_A5,
-		CONTROLLINO_A6,	 CONTROLLINO_A7,  CONTROLLINO_A8,
-		CONTROLLINO_A9,	 CONTROLLINO_A10, CONTROLLINO_A11,
-		CONTROLLINO_A12, CONTROLLINO_A13, CONTROLLINO_A14,
-		CONTROLLINO_A15, CONTROLLINO_I16, CONTROLLINO_I17,
-		CONTROLLINO_I18
-	};
 	
-	for(int i=0;i<=18;i++) {
+	for(int i=0;i<19;i++) {
 		DEBUG_PRINT_PARAM("Input  ", i);
-		DEBUG_PRINT_PARAM(" pin ", pins[i]);
-		Button *button = new Button(pins[i] , LOW, true, 10);
-		DEBUG_PRINT_PARAM("Handlers  ", i);
-		button->down()->addHandler(&PLC::onButtonDown);
-		button->up()->addHandler(&PLC::onButtonUp);
-		DEBUG_PRINT_PARAM("Creating input  ", i)
-		Input *input = new Input(names[i], button);
-		DEBUG_PRINT_PARAM("Adding to the list  ", i)
-		PLC::inputs.push_back(input);
-		DEBUG_PRINT_PARAM("Initialized  ", i)
- }
-	DEBUG_PRINT("Initialized")
+		DEBUG_PRINT_PARAM(" pin ", names[i]);
 
+#ifdef SIMULATED_CONTROLLINO
+		pinMode(pins[i], INPUT_PULLUP);
+#else
+		pinMode(pins[i], INPUT);
+#endif
+		DEBUG_PRINT("Initialized")
+	}
 	INFO_PRINT("Inputs initialized: ");
  }
 
@@ -231,19 +256,22 @@ bool PLC::reconnect() {
 
 void PLC::runDiscovery()
 {
-	char config_msg[200];
+	Serial.println(freeMemory());
+	char config_msg[250];
 	char name[8];
-	char mac[7];
+	char mac[15];
 	char config_topic[50];
 	sprintf_P(mac, PSTR("%x%x%x%x%x%x"), Configuration::mac[0], Configuration::mac[1], Configuration::mac[2],
 			Configuration::mac[3], Configuration::mac[4], Configuration::mac[5]);
+	Serial.println(mac);
 
 	for (int m = 0; m < Configuration::modbus_count; m++) {
 		for (int i = 0; i < MODBUS_SIZE; i++) {
 			sprintf_P(name, PSTR("M%dI%d"), m + Configuration::modbus_address, i + 1);
-			sprintf_P(config_msg, HASS_DISCOVERY, name, mac, name, Configuration::root_Topic,
+			sprintf_P(config_msg, PSTR(HASS_DISCOVERY), name, mac, name, Configuration::root_Topic,
 		            Configuration::PLC_Topic, name, Configuration::state_Topic, mac);
 			sprintf_P(config_topic, PSTR("homeassistant/binary_sensor/%s/config"), name);
+			Serial.println(config_msg);
 			mqttClient.publish(config_topic, config_msg, true);
 		}
 	}
@@ -340,33 +368,7 @@ void PLC::publish(const char* portName,const char* messageType, const char* payl
 	char topic[topicLength];
 	topicString.toCharArray(topic, topicLength); 
 
-	mqttClient.publish(topic, payload);  
-}
-
-void PLC::onButtonDown(EventArgs* e){
-	INFO_PRINT_PARAM("Down!", ((Button*)e->sender)->pin());
-	publishInput(((Button*)e->sender)->pin(), OFFSTATE);
-	
-}
-
-void PLC::onButtonUp(EventArgs* e){
-	INFO_PRINT_PARAM("Up!", ((Button*)e->sender)->pin());
-	publishInput(((Button*)e->sender)->pin(), ONSTATE);
-	
-}
-
-void PLC::publishInput(int pin, const char * event)
-{
-	typename vector<Input*>::iterator Iter;
-	
-	for (Iter = inputs.begin() ; Iter != inputs.end() ; Iter++ )  
-	{
-		if((*Iter)->button->pin()==pin)
-		{
-			PLC::publish((*Iter)->topic, Configuration::state_Topic, event);
-			break;
-		}
-	}
+	mqttClient.publish(topic, payload, true);
 }
 
 

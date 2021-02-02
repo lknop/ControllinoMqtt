@@ -1,13 +1,10 @@
 #ifndef _PLC_h
 #define _PLC_h
 
-#include <vector>
 #include <Arduino.h>
 #include <Controllino.h>
 #include <SPI.h>
 #include <PubSubClient.h>
-#include "Button.h"
-#include "Timer.h"
 #include "DebugUtils.h"
 #include "Configuration.h"
 #include <Ethernet.h>
@@ -16,6 +13,7 @@
 #define MasterModbusAddress  0
 #define MODBUS_INTERVAL 80
 #define MODBUS_SIZE 8
+#define INPUT_INTERVAL 20
 
 // This MACRO defines number of the com port that is used for RS 485 interface.
 // For MAXI and MEGA RS485 is reserved UART Serial3.
@@ -24,20 +22,9 @@
 #define OFFSTATE "OFF"
 
 #define HASS_DISCOVERY "{\"name\":\"%s\",\"uniq_id\":\"%s_%s\", \
-\"stat_t\":\"%s/%s/%s/%s\",\"dev\":{\"mf\":\"lino\",\"ids\":[\"lino\",\"%s\"],\"name\":\"lino\"}"
+\"stat_t\":\"%s/%s/%s/%s\",\"dev\":{\"mf\":\"lino\",\"ids\":[\"lino\",\"%s\"],\"name\":\"lino\"}}"
 
 using namespace std;
-
-class Input {
-    public:
-        Button* button;
-        const char* topic;
-        Input(const char* t, Button* b){
-            this->button = b;
-            this->topic = t;
-        }
-};
-
 
 class PLC {
     public:
@@ -47,17 +34,21 @@ class PLC {
     private:
         static EthernetClient ethClient;
         static PubSubClient mqttClient;
-        static vector<Input*> inputs;
         static Modbus modbus_master;
         static modbus_t modbus_data;
         static uint8_t modbus_state;
         static uint8_t modbus_unit;
         static uint16_t modbus_reg;
         static uint16_t modbus_values[8];
-        static uint32_t modbus_wait;
+        static uint32_t modbus_millis;
+        static uint8_t pins[19];
+        static uint8_t pin_values[19];
+        static uint8_t pin_debounce[19];
+        static uint32_t pin_millis;
         static void initializeModbus();
         static void loopModbus();
-        static long millisLastAttempt;
+        static void loopInputs();
+        static long mqtt_millis;
         static void initializeMQTT();
         static void initializeEthernet();
         static void initializeInputs();
@@ -67,9 +58,6 @@ class PLC {
         static void onMQTTMessage(char* topic, byte* payload, unsigned int length) ;
         static bool getOuput(char* topic,char* ouput);
         static void updateOutput(char* outputName,int newState);
-        static void onButtonClick(EventArgs* e);
-        static void onButtonDown(EventArgs* e);
-        static void onButtonUp(EventArgs* e);
         static int getValue(byte* payload, unsigned int length);
         static void publish(const char* portName,const char* messageType, const char* payload);
         static void publishInput(int pin, const char * event);
