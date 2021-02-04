@@ -362,9 +362,9 @@ void PLC::updateOutput(char* outputName,int newState) {
     } else if (outputName[0] == 'D' && outputNumber >=0 && outputNumber<12) {
       pin = CONTROLLINO_D0 + outputNumber;
     } else if (outputName[0] == 'D' && outputNumber >=12 && outputNumber<20) {
-      pin = CONTROLLINO_D12 + outputNumber;
+      pin = CONTROLLINO_D12 + outputNumber - 12;
     } else if (outputName[0] == 'D' && outputNumber >=20 && outputNumber<24) {
-      pin = CONTROLLINO_D20 + outputNumber;
+      pin = CONTROLLINO_D20 + outputNumber - 20;
     } else {
       log("Invalid output");
       return;

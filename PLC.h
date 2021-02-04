@@ -12,8 +12,8 @@
 
 #define MasterModbusAddress  0
 #define MODBUS_INTERVAL 80
-#define MODBUS_SIZE 8
-#define INPUT_INTERVAL 20
+#define MODBUS_SIZE 16
+#define INPUT_INTERVAL 15
 
 // This MACRO defines number of the com port that is used for RS 485 interface.
 // For MAXI and MEGA RS485 is reserved UART Serial3.
