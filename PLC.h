@@ -30,7 +30,7 @@
 \"stat_t\":\"%s/%s/%s/%s\",\"dev\":{\"mf\":\"lino\",\"ids\":[\"lino\",\"%s\"],\"name\":\"lino\"}}"
 
 #define HASS_DISCOVERY_OUTPUT "{ \"~\": \"%s/%s/%s\", \"name\":\"%s\",\"uniq_id\":\"%s_%s\", \
-\"cmd_t\":\"~/command\", \"stat_t\":\"~/%s\",\"dev\":{\"mf\":\"lino\",\"ids\":[\"lino\",\"%s\"],\"name\":\"lino\"}}"
+\"cmd_t\":\"~/command\",\"ret\":true,\"stat_t\":\"~/%s\",\"dev\":{\"mf\":\"lino\",\"ids\":[\"lino\",\"%s\"],\"name\":\"lino\"}}"
 
 
 using namespace std;
