@@ -65,6 +65,7 @@ class PLC {
         static uint8_t pin_debounce[19];
         static uint32_t pin_millis;
         static cppQueue queue;
+        static uint8_t validEthernet;
         static void initializeModbus();
         static void loopModbus();
         static void loopInputs();

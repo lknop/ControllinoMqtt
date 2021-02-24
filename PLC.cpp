@@ -18,10 +18,12 @@ PubSubClient PLC::mqttClient(ethClient);
 Modbus PLC::modbus_master(MasterModbusAddress, RS485Serial, 0);
 uint16_t PLC::modbus_reg = 0;
 uint16_t PLC::modbus_values[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-modbus_t PLC::modbus_data = { .u8id = 0, .u8fct = 2, .u16RegAdd = 0, .u16CoilsNo = MODBUS_SIZE, .au16reg = &modbus_reg };
+modbus_t PLC::modbus_data = { .u8id = 0, .u8fct = MB_FC_READ_DISCRETE_INPUT, .u16RegAdd = 0, .u16CoilsNo = MODBUS_SIZE, .au16reg = &modbus_reg };
 uint8_t PLC::modbus_state = 0;
 uint8_t PLC::modbus_unit = 0;
 uint32_t PLC::modbus_millis = 0;
+
+uint8_t PLC::validEthernet = 0;
 
 cppQueue PLC::queue(sizeof(ModbusWriteStruct), 10, FIFO);
 
@@ -70,10 +72,16 @@ void PLC::setup() {
 }
  
 void PLC::loop() {
-    DEBUG_PRINT("loop start");
 	
 	Configuration::loop();
 	
+	if (!validEthernet) {
+		if (!Configuration::isConfiguring) {
+			PLC::initializeEthernet();
+		}
+		return;
+	}
+
 	if(Configuration::isValid && !Configuration::isConfiguring) {
 		bool connected  = true;
 
@@ -91,7 +99,6 @@ void PLC::loop() {
 		loopInputs();
 	}
 	
-    DEBUG_PRINT("loop end");
 }
 
 void PLC::initializeModbus() {
@@ -123,7 +130,7 @@ void PLC::loopInputs() {
 }
 
 void PLC::loopModbus() {
-  if (Configuration::modbus_count == 0) {
+  if (Configuration::modbus_count == 0 && queue.isEmpty()) {
 	  return;
   }
   char subscribe_topic[8];
@@ -141,6 +148,7 @@ void PLC::loopModbus() {
 		  } else {
 			  ModbusWrite mw;
 			  queue.pop(&mw);
+			  DEBUG_PRINT_PARAM("sending to ", mw.slave);
 			  modbus_t write_query = { .u8id = mw.slave, .u8fct = mw.function, .u16RegAdd = mw.coil_register, .u16CoilsNo = 0, .au16reg = &mw.value };
 			  modbus_master.query(write_query);
 			  modbus_state = 3;
@@ -191,24 +199,19 @@ void PLC::initializeEthernet() {
 #ifdef SIMULATED_CONTROLLINO
   Ethernet.init(10);
 #endif
-  int validAddress;
   if (Configuration::ip[0] == 0) { // use DHCP
-      validAddress = Ethernet.begin(Configuration::mac);
+      validEthernet = Ethernet.begin(Configuration::mac);
   } else {
       Ethernet.begin(Configuration::mac, ip);
-      validAddress = 1;
+      validEthernet = 1;
   }
 
-  if (validAddress == 0) {
+  if (validEthernet == 0) {
     INFO_PRINT("Failed to configure Ethernet using DHCP");
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
       INFO_PRINT("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
     } else if (Ethernet.linkStatus() == LinkOFF) {
       INFO_PRINT("Ethernet cable is not connected.");
-    }
-    // no point in carrying on, so do nothing forever:
-    while (true) {
-      delay(1);
     }
   }
   
