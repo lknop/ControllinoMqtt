@@ -72,6 +72,11 @@
 			<location>/home/lknop/Arduino/libraries/PubSubClient</location>
 		</link>
 		<link>
+			<name>libraries/Queue</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/Queue/1.9.0</locationURI>
+		</link>
+		<link>
 			<name>libraries/SPI</name>
 			<type>2</type>
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/avr/1.8.2/libraries/SPI</locationURI>

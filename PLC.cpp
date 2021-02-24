@@ -22,6 +22,9 @@ modbus_t PLC::modbus_data = { .u8id = 0, .u8fct = 2, .u16RegAdd = 0, .u16CoilsNo
 uint8_t PLC::modbus_state = 0;
 uint8_t PLC::modbus_unit = 0;
 uint32_t PLC::modbus_millis = 0;
+
+cppQueue PLC::queue(sizeof(ModbusWriteStruct), 10, FIFO);
+
 const char * names[INPUT_COUNT] = {"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10",
 		"A11","A12","A13","A14","A15","I16","I17","I18"};
 uint8_t PLC::pins[INPUT_COUNT] = {
@@ -131,9 +134,17 @@ void PLC::loopModbus() {
 		  }
 		  break;
 	  case 1:
-		  modbus_data.u8id = Configuration::modbus_address + modbus_unit;
-		  modbus_master.query(modbus_data); // send query (only once)
-		  modbus_state++;
+		  if (queue.isEmpty()) {
+			  modbus_data.u8id = Configuration::modbus_address + modbus_unit;
+			  modbus_master.query(modbus_data); // send query (only once)
+			  modbus_state++;
+		  } else {
+			  ModbusWrite mw;
+			  queue.pop(&mw);
+			  modbus_t write_query = { .u8id = mw.slave, .u8fct = mw.function, .u16RegAdd = mw.coil_register, .u16CoilsNo = 0, .au16reg = &mw.value };
+			  modbus_master.query(write_query);
+			  modbus_state = 3;
+		  }
 		  break;
 	  case 2:
 		  modbus_master.poll(); // check incoming messages
@@ -156,6 +167,13 @@ void PLC::loopModbus() {
 			 modbus_millis = millis();
 		  }
 		  break;
+	  case 3:
+		  modbus_master.poll(); // check incoming messages
+          if (modbus_master.getState() == COM_IDLE)
+          {
+              modbus_state = 0;
+          }
+          break;
 	}
 }
 
@@ -317,7 +335,7 @@ void PLC::onMQTTMessage(char* topic, byte* payload, unsigned int length) {
     }
     
 
-    char command[10];
+    char command[12];
     if (getOuput(topic, command)) {
         DEBUG_PRINT_PARAM("Command: ", command);
         
@@ -325,8 +343,15 @@ void PLC::onMQTTMessage(char* topic, byte* payload, unsigned int length) {
         
         if (newState != INVALID_VALUE && (command[0]=='R' || command[0]=='D')) {
             updateOutput(command, newState);
+        } else if (newState != INVALID_VALUE && command[0]=='M') {
+            ModbusWrite mw;
+            char *end;
+            mw.slave = strtoul(command+1, &end, 10);
+            mw.function = (*end == 'C') ? MB_FC_WRITE_COIL : MB_FC_WRITE_REGISTER;
+            mw.coil_register = strtoul(end+1, NULL, 10);
+            mw.value = newState;
+            queue.push(&mw);
         }
-
   } else {
       DEBUG_PRINT("Status message");
   }
@@ -396,7 +421,12 @@ int PLC::getValue(byte* payload, unsigned int length) {
         return HIGH;
     } else if (length==3 && payload[0] == 'O' && payload[1] == 'F' && payload[2] == 'F') {
         return LOW;
-    }  else  {
+    } else if (length==4) {
+        char num[5];
+        memcpy(num, payload, length);
+        num[length] = 0;
+        return strtoul(num, NULL, 16);
+    } else  {
        DEBUG_PRINT("Command ignored");
        return INVALID_VALUE;
     }

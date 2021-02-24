@@ -8,6 +8,7 @@
 #include "DebugUtils.h"
 #include "Configuration.h"
 #include <Ethernet.h>
+#include <cppQueue.h>
 #include "ModbusRtu.h"
 
 #define MasterModbusAddress  0
@@ -35,6 +36,15 @@
 
 using namespace std;
 
+
+using ModbusWrite = struct ModbusWriteStruct {
+	uint8_t		slave;
+	uint8_t		function;
+	uint16_t	coil_register;
+	uint16_t	value;
+};
+
+
 class PLC {
     public:
         static void setup();
@@ -54,6 +64,7 @@ class PLC {
         static uint8_t pin_values[19];
         static uint8_t pin_debounce[19];
         static uint32_t pin_millis;
+        static cppQueue queue;
         static void initializeModbus();
         static void loopModbus();
         static void loopInputs();

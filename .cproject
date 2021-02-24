@@ -30,6 +30,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/ArduinoSTL/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/Button}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/PubSubClient/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/Queue/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.cpp.sketch.input.811349943" name="CPP source files" superClass="io.sloeber.compiler.cpp.sketch.input"/>
 							</tool>
@@ -46,6 +47,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/ArduinoSTL/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/Button}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/PubSubClient/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/Queue/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.c.sketch.input.217535110" name="C Source Files" superClass="io.sloeber.compiler.c.sketch.input"/>
 							</tool>
@@ -62,6 +64,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/ArduinoSTL/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/Button}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/PubSubClient/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ControllinoMqtt/libraries/Queue/src}&quot;"/>
 								</option>
 								<inputType id="io.sloeber.compiler.S.sketch.input.937050498" name="Assembly source files" superClass="io.sloeber.compiler.S.sketch.input"/>
 							</tool>
