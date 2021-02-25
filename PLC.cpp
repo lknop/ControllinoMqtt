@@ -271,51 +271,50 @@ bool PLC::reconnect() {
 
 void PLC::runDiscovery()
 {
-	char config_msg[250];
 	char name[8];
+	for (int m = 0; m < Configuration::modbus_count; m++) {
+		for (int i = 0; i < MODBUS_SIZE; i++) {
+			sprintf_P(name, PSTR("M%dI%d"), m + Configuration::modbus_address, i + 1);
+			publishEntity(name, false);
+		}
+	}
+
+	for (int i = 0; i < INPUT_COUNT; i++) {
+		publishEntity(names[i], false);
+	}
+
+	for (int i = 0; i < RELAY_COUNT; i++) {
+		sprintf_P(name, PSTR("R%d"), i);
+		publishEntity(name, true);
+	}
+
+	for (int i = 0; i < OUTPUT_COUNT; i++) {
+		sprintf_P(name, PSTR("D%d"), i);
+		publishEntity(name, true);
+	}
+
+}
+
+void PLC::publishEntity(const char* name, bool isOutput) {
+	char config_msg[250];
 	char mac[15];
 	char config_topic[50];
 	sprintf_P(mac, PSTR("%x%x%x%x%x%x"), Configuration::mac[0], Configuration::mac[1], Configuration::mac[2],
 			Configuration::mac[3], Configuration::mac[4], Configuration::mac[5]);
 
-	for (int m = 0; m < Configuration::modbus_count; m++) {
-		for (int i = 0; i < MODBUS_SIZE; i++) {
-			sprintf_P(name, PSTR("M%dI%d"), m + Configuration::modbus_address, i + 1);
-			sprintf_P(config_msg, PSTR(HASS_DISCOVERY_INPUT), name, mac, name, Configuration::root_Topic,
-		            Configuration::PLC_Topic, name, Configuration::state_Topic, mac);
-			sprintf_P(config_topic, PSTR("homeassistant/binary_sensor/%s/config"), name);
-			INFO_PRINT_PARAM("Sending ", config_msg);
-			mqttClient.publish(config_topic, config_msg, true);
-		}
+	if (isOutput) {
+		sprintf_P(config_msg, PSTR(HASS_DISCOVERY_OUTPUT), Configuration::root_Topic,
+				Configuration::PLC_Topic, name, name, mac, name, Configuration::state_Topic, mac);
+		sprintf_P(config_topic, PSTR("homeassistant/switch/%s/config"), name);
+	} else {
+		sprintf_P(config_msg, PSTR(HASS_DISCOVERY_INPUT), name, mac, name, Configuration::root_Topic,
+				Configuration::PLC_Topic, name, Configuration::state_Topic, mac);
+		sprintf_P(config_topic, PSTR("homeassistant/binary_sensor/%s/config"), name);
 	}
-
-	for (int i = 0; i < INPUT_COUNT; i++) {
-		sprintf_P(config_msg, PSTR(HASS_DISCOVERY_INPUT), names[i], mac, names[i], Configuration::root_Topic,
-				Configuration::PLC_Topic, names[i], Configuration::state_Topic, mac);
-		sprintf_P(config_topic, PSTR("homeassistant/binary_sensor/%s/config"), names[i]);
-		INFO_PRINT_PARAM("Sending ", config_msg);
-		mqttClient.publish(config_topic, config_msg, true);
-	}
-
-	for (int i = 0; i < RELAY_COUNT; i++) {
-			sprintf_P(name, PSTR("R%d"), i);
-			sprintf_P(config_msg, PSTR(HASS_DISCOVERY_OUTPUT), Configuration::root_Topic,
-					Configuration::PLC_Topic, name, name, mac, name, Configuration::state_Topic, mac);
-			sprintf_P(config_topic, PSTR("homeassistant/switch/%s/config"), name);
-			INFO_PRINT_PARAM("Sending ", config_msg);
-			mqttClient.publish(config_topic, config_msg, true);
-	}
-
-	for (int i = 0; i < OUTPUT_COUNT; i++) {
-			sprintf_P(name, PSTR("D%d"), i);
-			sprintf_P(config_msg, PSTR(HASS_DISCOVERY_OUTPUT), Configuration::root_Topic,
-					Configuration::PLC_Topic, name, name, mac, name, Configuration::state_Topic, mac);
-			sprintf_P(config_topic, PSTR("homeassistant/switch/%s/config"), name);
-			INFO_PRINT_PARAM("Sending ", config_msg);
-			mqttClient.publish(config_topic, config_msg, true);
-	}
-
+	INFO_PRINT_PARAM("Sending ", config_msg);
+	mqttClient.publish(config_topic, config_msg, true);
 }
+
 
 void PLC::log(const char* errorMsg)
 {
@@ -347,12 +346,18 @@ void PLC::onMQTTMessage(char* topic, byte* payload, unsigned int length) {
         if (newState != INVALID_VALUE && (command[0]=='R' || command[0]=='D')) {
             updateOutput(command, newState);
         } else if (newState != INVALID_VALUE && command[0]=='M') {
+
             ModbusWrite mw;
             char *end;
             mw.slave = strtoul(command+1, &end, 10);
             mw.function = (*end == 'C') ? MB_FC_WRITE_COIL : MB_FC_WRITE_REGISTER;
             mw.coil_register = strtoul(end+1, NULL, 10);
             mw.value = newState;
+
+            if (mw.function == MB_FC_WRITE_COIL) {
+                publishEntity(command, true);
+                PLC::publish(command, Configuration::state_Topic, newState ? ONSTATE : OFFSTATE);
+            }
             queue.push(&mw);
         }
   } else {

@@ -82,5 +82,7 @@ class PLC {
         static int getValue(byte* payload, unsigned int length);
         static void publish(const char* portName,const char* messageType, const char* payload);
         static void publishInput(int pin, const char * event);
+        static void publishEntity(const char* name, bool isOutput);
 };
+
 #endif
