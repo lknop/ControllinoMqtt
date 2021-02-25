@@ -10,41 +10,12 @@
 
 #define INVALID_VALUE -99
 
-using namespace std;
-
 
 EthernetClient PLC::ethClient;
 PubSubClient PLC::mqttClient(ethClient);
-Modbus PLC::modbus_master(MasterModbusAddress, RS485Serial, 0);
-uint16_t PLC::modbus_reg = 0;
-uint16_t PLC::modbus_values[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-modbus_t PLC::modbus_data = { .u8id = 0, .u8fct = MB_FC_READ_DISCRETE_INPUT, .u16RegAdd = 0, .u16CoilsNo = MODBUS_SIZE, .au16reg = &modbus_reg };
-uint8_t PLC::modbus_state = 0;
-uint8_t PLC::modbus_unit = 0;
-uint32_t PLC::modbus_millis = 0;
-
+Inputs PLC::inputs;
+ModbusClient PLC::modbusClient;
 uint8_t PLC::validEthernet = 0;
-
-cppQueue PLC::queue(sizeof(ModbusWriteStruct), 10, FIFO);
-
-const char * names[INPUT_COUNT] = {"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9","A10",
-		"A11","A12","A13","A14","A15","I16","I17","I18"};
-uint8_t PLC::pins[INPUT_COUNT] = {
-	CONTROLLINO_A0,  CONTROLLINO_A1,  CONTROLLINO_A2,
-	CONTROLLINO_A3,	 CONTROLLINO_A4,  CONTROLLINO_A5,
-	CONTROLLINO_A6,	 CONTROLLINO_A7,  CONTROLLINO_A8,
-	CONTROLLINO_A9,	 CONTROLLINO_A10, CONTROLLINO_A11,
-	CONTROLLINO_A12, CONTROLLINO_A13, CONTROLLINO_A14,
-	CONTROLLINO_A15, CONTROLLINO_I16, CONTROLLINO_I17,
-	CONTROLLINO_I18
-};
-#ifdef SIMULATED_CONTROLLINO
-uint8_t PLC::pin_values[INPUT_COUNT] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-#else
-uint8_t PLC::pin_values[INPUT_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-#endif
-uint8_t PLC::pin_debounce[INPUT_COUNT]  = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-uint32_t PLC::pin_millis = 0;
 
 long PLC::mqtt_millis = 0;
 
@@ -61,8 +32,8 @@ void PLC::setup() {
 	if(Configuration::isValid) {
 		PLC::initializeMQTT();
 		PLC::initializeEthernet();
-		PLC::initializeInputs();
-		PLC::initializeModbus();
+		inputs.begin(PLC::onInputChange);
+		modbusClient.begin(PLC::onInputChange);
 		DEBUG_PRINT("Initialization OK");
 	} else {
 		INFO_PRINT("PLC not configured");
@@ -95,94 +66,10 @@ void PLC::loop() {
 		}  else {
 			INFO_PRINT("Retrying in five seconds");
 		}
-		loopModbus();
-		loopInputs();
+		modbusClient.loop();
+		inputs.loop();
 	}
 	
-}
-
-void PLC::initializeModbus() {
-	  modbus_master.begin( 19200 ); // baud-rate at 19200
-	  modbus_master.setTimeOut( 5000 ); // if there is no answer in 5000 ms, roll over
-	  modbus_millis = millis() + 1000;
-}
-
-void PLC::loopInputs() {
-	if (millis() - pin_millis < INPUT_INTERVAL) {
-		return;
-	}
-	pin_millis = millis();
-	for (int i = 0; i < 19; i++) {
-		byte pinValue = digitalRead(pins[i]);
-		if (pinValue != pin_values[i]) {
-			pin_debounce[i] = (pin_debounce[i] << 1) | pinValue;
-			if (pin_values[i] && pin_debounce[i] == 0) {
-				pin_values[i] = 0;
-				INFO_PRINT_PARAM("Publishing OFF for ", names[i]);
-				PLC::publish(names[i], Configuration::state_Topic, OFFSTATE);
-			} else if (!pin_values[i] && pin_debounce[i] == 0xFF) {
-				pin_values[i] = 1;
-				INFO_PRINT_PARAM("Publishing ON for ", names[i]);
-				PLC::publish(names[i], Configuration::state_Topic, ONSTATE);
-			}
-		}
-	}
-}
-
-void PLC::loopModbus() {
-  if (Configuration::modbus_count == 0 && queue.isEmpty()) {
-	  return;
-  }
-  char subscribe_topic[8];
-  switch(PLC::modbus_state) {
-	  case 0:
-		  if (millis() - modbus_millis > MODBUS_INTERVAL) {
-			modbus_state++;
-		  }
-		  break;
-	  case 1:
-		  if (queue.isEmpty()) {
-			  modbus_data.u8id = Configuration::modbus_address + modbus_unit;
-			  modbus_master.query(modbus_data); // send query (only once)
-			  modbus_state++;
-		  } else {
-			  ModbusWrite mw;
-			  queue.pop(&mw);
-			  DEBUG_PRINT_PARAM("sending to ", mw.slave);
-			  modbus_t write_query = { .u8id = mw.slave, .u8fct = mw.function, .u16RegAdd = mw.coil_register, .u16CoilsNo = 0, .au16reg = &mw.value };
-			  modbus_master.query(write_query);
-			  modbus_state = 3;
-		  }
-		  break;
-	  case 2:
-		  modbus_master.poll(); // check incoming messages
-		  if (modbus_master.getState() == COM_IDLE)
-		  {
-			 uint16_t current_modbus = modbus_reg;
-			 uint16_t mask = current_modbus ^ modbus_values[modbus_unit];
-			 if (mask) {
-				 for (uint8_t i = 0; i < MODBUS_SIZE; i++) {
-					 if (bitRead(mask, i)) {
-						 sprintf_P(subscribe_topic, PSTR("M%dI%d"), modbus_unit + Configuration::modbus_address, i + 1);
-						 INFO_PRINT_PARAM("Publishing ", subscribe_topic);
-						 PLC::publish(subscribe_topic, Configuration::state_Topic, bitRead(current_modbus, i) ? ONSTATE : OFFSTATE);
-					 }
-				 }
-				 modbus_values[modbus_unit] = current_modbus;
-			 }
-			 modbus_state = 0;
-			 modbus_unit = (modbus_unit + 1) % Configuration::modbus_count;
-			 modbus_millis = millis();
-		  }
-		  break;
-	  case 3:
-		  modbus_master.poll(); // check incoming messages
-          if (modbus_master.getState() == COM_IDLE)
-          {
-              modbus_state = 0;
-          }
-          break;
-	}
 }
 
 void PLC::initializeMQTT() {
@@ -221,23 +108,6 @@ void PLC::initializeEthernet() {
 
   INFO_PRINT_PARAM("Local IP", Ethernet.localIP());
 }
-
-void PLC::initializeInputs() {  
-	INFO_PRINT("Initializing inputs...");
-	
-	for(int i=0;i<19;i++) {
-		DEBUG_PRINT_PARAM("Input  ", i);
-		DEBUG_PRINT_PARAM(" pin ", names[i]);
-
-#ifdef SIMULATED_CONTROLLINO
-		pinMode(pins[i], INPUT_PULLUP);
-#else
-		pinMode(pins[i], INPUT);
-#endif
-		DEBUG_PRINT("Initialized")
-	}
-	INFO_PRINT("Inputs initialized: ");
- }
 
 bool PLC::reconnect() {
     bool res;
@@ -280,7 +150,7 @@ void PLC::runDiscovery()
 	}
 
 	for (int i = 0; i < INPUT_COUNT; i++) {
-		publishEntity(names[i], false);
+		publishEntity(Inputs::PIN_NAMES[i], false);
 	}
 
 	for (int i = 0; i < RELAY_COUNT; i++) {
@@ -329,6 +199,10 @@ void PLC::log(const char* errorMsg)
     }
 }
 
+void PLC::onInputChange(char* name, uint8_t value) {
+    PLC::publish(name, Configuration::state_Topic, value ? ONSTATE : OFFSTATE);
+}
+
 void PLC::onMQTTMessage(char* topic, byte* payload, unsigned int length) {
     DEBUG_PRINT_PARAM("Message arrived to topic", topic);
     
@@ -346,19 +220,10 @@ void PLC::onMQTTMessage(char* topic, byte* payload, unsigned int length) {
         if (newState != INVALID_VALUE && (command[0]=='R' || command[0]=='D')) {
             updateOutput(command, newState);
         } else if (newState != INVALID_VALUE && command[0]=='M') {
-
-            ModbusWrite mw;
-            char *end;
-            mw.slave = strtoul(command+1, &end, 10);
-            mw.function = (*end == 'C') ? MB_FC_WRITE_COIL : MB_FC_WRITE_REGISTER;
-            mw.coil_register = strtoul(end+1, NULL, 10);
-            mw.value = newState;
-
-            if (mw.function == MB_FC_WRITE_COIL) {
+            if (modbusClient.parseCommand(command, newState)) {
                 publishEntity(command, true);
                 PLC::publish(command, Configuration::state_Topic, newState ? ONSTATE : OFFSTATE);
             }
-            queue.push(&mw);
         }
   } else {
       DEBUG_PRINT("Status message");
