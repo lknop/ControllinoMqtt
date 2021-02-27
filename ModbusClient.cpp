@@ -17,7 +17,7 @@ ModbusClient::ModbusClient()
 	publish_callback = NULL;
 }
 
-void ModbusClient::begin(INPUT_CALLBACK_SIGNATURE ) {
+void ModbusClient::begin(INPUT_CALLBACK_SIGNATURE) {
     modbus_master.begin( 19200 ); // baud-rate at 19200
     modbus_master.setTimeOut( 5000 ); // if there is no answer in 5000 ms, roll over
     modbus_millis = millis() + 1000;
