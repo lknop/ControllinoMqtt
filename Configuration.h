@@ -44,44 +44,22 @@ namespace Configuration {
     extern byte modbus_address;
     extern byte modbus_count;
     
-    void initial(String readedString);
-    void menu(String readedString);
-    void PLCTopic(String readedString);
-    void MAC(String readedString);
-    void IP(String readedString);
-    void server_State(String readedString);
-    void port_State(String readedString);
-    void rootTopic(String readedString);
-    void commandTopic(String readedString);
-    void stateTopic(String readedString);
-    void logTopic(String readedString);
-    void modbusAddress(String readString);
-    void modbusCount(String readString);
-    void setMenuState();
-    void setInitialState();
-    void setPLCTopicState();
-    void setMACState();
-    void setIPState();
-    void setServerState();
-    void setPortState();
-    void setRootTopicState();
-    void setCommandTopicState();
-    void setStateTopicState();
-    void setLogTopicState();
-    void setModbusAddressState();
-    void setModbusCountState();
-    void setUsernameState();
-    void user();
-    void setPasswordState();
-    void pass();
+    void initial(String readString);
+    void menu_action(String readString);
+    void read_mac(String readString);
+    void read_ip(String readString);
+    void read_server(String readString);
+    void show_menu();
+    void show_menu_element(const __FlashStringHelper* label, char* value);
+    void show_menu_element(const __FlashStringHelper*, uint16_t value);
     void loop();
     
     void save();
-    void saveCharArray(int &offset, char* charArray);
-    void saveByteArray(int &offset, byte* byteArray, int length);
+    void save_char_array(int &offset, char* charArray);
+    void save_byte_array(int &offset, byte* byteArray, int length);
     void load();
-    void readCharArray(int &offset, char* charArray, int maxLength);
-    void readByteArray(int &offset, byte* byteArray, int length);
+    void read_char_array(int &offset, char* charArray, int maxLength);
+    void read_byte_array(int &offset, byte* byteArray, int length);
 }
 
 #endif

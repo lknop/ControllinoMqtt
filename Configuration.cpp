@@ -27,23 +27,23 @@ namespace Configuration {
     
     void save() {
         int currentAddress = 0;
-        saveCharArray(currentAddress, signature);
-        saveCharArray(currentAddress, PLC_Topic);
-        saveCharArray(currentAddress, root_Topic);
-        saveCharArray(currentAddress, command_Topic);
-        saveCharArray(currentAddress, log_Topic);
-        saveCharArray(currentAddress, username);
-        saveCharArray(currentAddress, password);
-        saveByteArray(currentAddress, mac, 6);
-        saveByteArray(currentAddress, ip, 4);
-        saveByteArray(currentAddress, server, 4);
+        save_char_array(currentAddress, signature);
+        save_char_array(currentAddress, PLC_Topic);
+        save_char_array(currentAddress, root_Topic);
+        save_char_array(currentAddress, command_Topic);
+        save_char_array(currentAddress, log_Topic);
+        save_char_array(currentAddress, username);
+        save_char_array(currentAddress, password);
+        save_byte_array(currentAddress, mac, 6);
+        save_byte_array(currentAddress, ip, 4);
+        save_byte_array(currentAddress, server, 4);
         EEPROM.update(currentAddress++, modbus_address);
         EEPROM.update(currentAddress++, modbus_count);
         EEPROM.update(currentAddress++, port & 0xff);
         EEPROM.update(currentAddress++, port >> 8);
     }
    
-    void saveCharArray(int &offset, char* charArray){
+    void save_char_array(int &offset, char* charArray){
         int i = 0;
         bool finish = false;
         while(!finish) {
@@ -53,12 +53,11 @@ namespace Configuration {
             }
             i++;
         }
-        
         offset +=i;
     }
     
     
-    void saveByteArray(int &offset,byte* byteArray, int length){
+    void save_byte_array(int &offset,byte* byteArray, int length){
         int i = 0;
         for(i=0;i<length;i++){
              EEPROM.update(offset+i,byteArray[i]);
@@ -66,7 +65,7 @@ namespace Configuration {
         offset +=i;
     }
 
-    void readCharArray(int &offset, char* charArray, int maxLength){
+    void read_char_array(int &offset, char* charArray, int maxLength){
         String aux("");
         int i = 0;
         bool finish = false;
@@ -85,7 +84,7 @@ namespace Configuration {
         offset +=i;
     }
     
-    void readByteArray(int &offset,byte* byteArray, int length){
+    void read_byte_array(int &offset,byte* byteArray, int length){
         int i = 0;
         for(i=0;i<length;i++){
              EEPROM.get(offset+i,byteArray[i]);
@@ -100,7 +99,7 @@ namespace Configuration {
         isValid = true;
 
         // signature
-        readCharArray(currentAddress, aux, CONFIG_SIGNATURE_LENGTH+1);
+        read_char_array(currentAddress, aux, CONFIG_SIGNATURE_LENGTH+1);
         if(strcmp(aux,signature)) {
             Serial.print(F("signature "));
             Serial.print(aux);
@@ -108,15 +107,15 @@ namespace Configuration {
             isValid = false;
         } else {
             Serial.print(F("found..."));
-            readCharArray(currentAddress, PLC_Topic, CONFIG_MAX_LENGTH);
-            readCharArray(currentAddress, root_Topic, CONFIG_MAX_LENGTH);
-            readCharArray(currentAddress, command_Topic, CONFIG_MAX_LENGTH);
-            readCharArray(currentAddress, log_Topic, CONFIG_MAX_LENGTH);
-            readCharArray(currentAddress, username, CONFIG_MAX_LENGTH);
-            readCharArray(currentAddress, password, CONFIG_MAX_LENGTH);
-            readByteArray(currentAddress, mac, 6);
-            readByteArray(currentAddress, ip, 4);
-            readByteArray(currentAddress, server, 4);
+            read_char_array(currentAddress, PLC_Topic, CONFIG_MAX_LENGTH);
+            read_char_array(currentAddress, root_Topic, CONFIG_MAX_LENGTH);
+            read_char_array(currentAddress, command_Topic, CONFIG_MAX_LENGTH);
+            read_char_array(currentAddress, log_Topic, CONFIG_MAX_LENGTH);
+            read_char_array(currentAddress, username, CONFIG_MAX_LENGTH);
+            read_char_array(currentAddress, password, CONFIG_MAX_LENGTH);
+            read_byte_array(currentAddress, mac, 6);
+            read_byte_array(currentAddress, ip, 4);
+            read_byte_array(currentAddress, server, 4);
             EEPROM.get(currentAddress++, modbus_address);
             EEPROM.get(currentAddress++, modbus_count);
             EEPROM.get(currentAddress++, port);
@@ -124,7 +123,7 @@ namespace Configuration {
         }
    }
 
-    void setInitialState() {
+    void initial_state() {
        isConfiguring = false;
        Serial.println(F("To enter configuration mode press C"));
        state = initialState;
@@ -132,328 +131,209 @@ namespace Configuration {
        
     void initial(String readString) {
         if(readString.equals(String("C"))) {
-            setMenuState();
+            show_menu();
         } else {
-            setInitialState();
+            initial_state();
         }
     }
-    
-    void setMenuState() {
+
+    void show_menu_element(const __FlashStringHelper* label, char* value) {
+        Serial.print(label);
+        Serial.print(value);
+        Serial.println(")");
+    }
+
+    void show_menu_element(const __FlashStringHelper* label, uint16_t value) {
+        Serial.print(label);
+        Serial.print(value);
+        Serial.println(")");
+    }
+
+    void show_menu() {
         isConfiguring = true;
         Serial.println(F("*** MAIN CONFIGURATION MENU ***"));
         Serial.println();
         
-        Serial.print(F("1: Enter MAC => ("));
         char formattedMAC[17]; 
         sprintf(formattedMAC, "%x:%x:%x:%x:%x:%x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-        Serial.print(formattedMAC);  Serial.println(")");
+        show_menu_element(F("1: Enter MAC => ("), formattedMAC);
         
-        Serial.print(F("2: Enter IP => ("));
         char formattedIP[16]; 
         sprintf(formattedIP, "%03d.%03d.%03d.%03d", ip[0], ip[1], ip[2], ip[3]);
-        Serial.print(formattedIP);  Serial.println(")");
-        
-        Serial.print(F("3: MQTT Server IP => ("));
+        show_menu_element(F("2: Enter IP => ("), formattedIP);
         sprintf(formattedIP, "%03d.%03d.%03d.%03d", server[0], server[1], server[2], server[3]);
-        Serial.print(formattedIP);  Serial.println(F(")"));
-                                                 
-        Serial.print(F("4: MQTT Port => ("));
-        Serial.print(port);  
-        Serial.println(F(")"));
-                                                 
-        Serial.print(F("5: Root Topic => ("));
-        Serial.print(root_Topic);  
-        Serial.println(F(")"));
-                                                 
-        Serial.print(F("6: PLC Topic => ("));
-        Serial.print(PLC_Topic);  
-        Serial.println(F(")"));
-                                                 
-        Serial.print(F("7: Command Topic => ("));
-        Serial.print(command_Topic);  
-        Serial.println(F(")"));
-                                                 
-        Serial.print(F("8: State Topic => ("));
-        Serial.print(state_Topic);  
-        Serial.println(F(")"));
-                                                 
-        Serial.print(F("9: Log Topic => ("));
-        Serial.print(log_Topic);  
-        Serial.println(F(")"));
-
-        Serial.print(F("10: Modbus address => ("));
-        Serial.print(modbus_address);
-        Serial.println(F(")"));
-
-        Serial.print(F("11: Modbus unit count => ("));
-        Serial.print(modbus_count);
-        Serial.println(F(")"));
-
-        Serial.print(F("12: MQTT username => ("));
-        Serial.print(username);
-        Serial.println(F(")"));
-
-        Serial.print(F("13: MQTT password => ("));
-        Serial.print(password);
-        Serial.println(F(")"));
-
+        show_menu_element(F("3: MQTT Server IP => ("), formattedIP);
+        show_menu_element(F("4: MQTT Port => ("), port);
+        show_menu_element(F("5: Root Topic => ("), root_Topic);
+        show_menu_element(F("6: PLC Topic => ("), PLC_Topic);
+        show_menu_element(F("7: Command Topic => ("), command_Topic);
+        show_menu_element(F("8: State Topic => ("), state_Topic);
+        show_menu_element(F("9: Log Topic => ("), log_Topic);
+        show_menu_element(F("10: Modbus address => ("), modbus_address);
+        show_menu_element(F("11: Modbus unit count => ("), modbus_count);
+        show_menu_element(F("12: MQTT username => ("), username);
+        show_menu_element(F("13: MQTT password => ("), password);
         Serial.println();
-        Serial.println(F("X: Exit"));
+        Serial.println(F("X: Discard and Exit"));
         Serial.println();
-        Serial.println(F("R: Reboot"));
+        Serial.println(F("R: Save and Reboot"));
         Serial.println();
         Serial.println (F("Enter option: "));
         state = menuState;
     }
     
-    void menu(String readString){
+    void menu_action(String readString){
         if(readString == "X") {
-            setInitialState();
+            initial_state();
         } else if(readString == "1") {
-            setMACState();
+            Serial.print (F("Enter MAC: (HH:HH:HH:HH:HH:HH)"));
+            state = MACState;
         } else if(readString == "2") {
-            setIPState();
+            Serial.print (F("Enter IP: (nnn.nnn.nnn.nnn)\n(or 000.000.000.000 for DHCP)"));
+            state = IPState;
         } else if(readString == "3") {
-            setServerState();
+            Serial.print (F("Enter server IP: (nnn.nnn.nnn.nnn)"));
+            state = serverState;
         } else if(readString == "4") {
-            setPortState();
+            Serial.print (F("Enter server port: "));
+            state = portState;
         } else if(readString == "5") {
-            setRootTopicState();
+            Serial.print (F("Enter root topic: "));
+            state = rootTopicState;
         } else if(readString == "6") {
-            setPLCTopicState();
+            Serial.print (F("Enter PLC Topic: "));
+            state = PLCTopicState;
         } else if(readString == "7") {
-            setCommandTopicState();
+            Serial.print (F("Enter command topic: "));
+            state = commandTopicState;
         } else if(readString == "8") {
-            setStateTopicState();
+            Serial.print (F("Enter state topic: "));
+            state = stateTopicState;
         } else if(readString == "9") {
-            setLogTopicState();
+            Serial.print (F("Enter log topic: "));
+            state = logTopicState;
         } else if(readString == "10") {
-			setModbusAddressState();
+            Serial.print (F("Enter starting modbus address: "));
+            state = modbusAddressState;
         } else if(readString == "11") {
-			setModbusCountState();
+            Serial.print (F("Enter modbus unit count: "));
+            state = modbusCountState;
         } else if(readString == "12") {
-			setUsernameState();
+            Serial.print (F("Enter mqtt username (empty for no auth): "));
+            state = usernameState;
         } else if(readString == "13") {
-			setPasswordState();
+            Serial.print (F("Enter mqtt password: "));
+            state = passwordState;
         } else if(readString == "R") {
-              save();
-              Serial.println(F("Saved"));
-              wdt_enable(WDTO_60MS);
-              while(1) {}
-        } else {
-
+            save();
+            Serial.println(F("Saved"));
+            wdt_enable(WDTO_60MS);
+            while(1) {}
         }
     }
-    
-    void setPLCTopicState() {
-        Serial.print (F("Enter PLC Topic: "));
-        state = PLCTopicState;
-    }
-    
-   void PLCTopic(String readString){
-        readString.toCharArray(PLC_Topic,readString.length()+1);
-        setMenuState();
-    }
-    
-   void setRootTopicState() {
-        Serial.print (F("Enter root topic: "));
-        state = rootTopicState;
-   }
- 
-    void rootTopic(String readedString){
-        readedString.toCharArray(root_Topic,readedString.length()+1);
-        setMenuState();
-    } 
 
-    void setCommandTopicState() {
-        Serial.print (F("Enter command topic: "));
-        state = commandTopicState;
-   } 
-  
-   void commandTopic(String readString){
-        readString.toCharArray(command_Topic,readString.length()+1);
-        setMenuState();
-   } 
-        
-   void setStateTopicState() {
-        Serial.print (F("Enter state topic: "));
-        state = stateTopicState;
-   } 
-    
-   void stateTopic(String readedString){
-        readedString.toCharArray(state_Topic,readedString.length()+1);
-        setMenuState();
-   } 
      
-   void setLogTopicState() {
-        Serial.print (F("Enter log topic: "));
-        state = logTopicState;
-   }  
-    
-   void logTopic(String readString){
-        readString.toCharArray(log_Topic,readString.length()+1);
-        setMenuState();
-   }
-
-   void setModbusAddressState() {
-        Serial.print (F("Enter starting modbus address: "));
-        state = modbusAddressState;
-   }
-
-   void modbusAddress(String readString){
-	    modbus_address = readString.toInt();
-        setMenuState();
-   }
-
-   void setModbusCountState() {
-        Serial.print (F("Enter modbus unit count: "));
-        state = modbusCountState;
-   }
-
-   void modbusCount(String readString){
-	    modbus_count = readString.toInt();
-        setMenuState();
-   } 
-
-   void setUsernameState() {
-        Serial.print (F("Enter mqtt username (empty for no auth): "));
-        state = usernameState;
-   }
-
-   void user(String readString){
-        readString.toCharArray(username,readString.length()+1);
-        setMenuState();
-   }
-
-   void setPasswordState() {
-        Serial.print (F("Enter mqtt password: "));
-        state = passwordState;
-   }
-
-   void pass(String readString){
-        readString.toCharArray(password,readString.length()+1);
-        setMenuState();
-   }
-
-   void setIPState() {
-        Serial.print (F("Enter IP: (nnn.nnn.nnn.nnn)\n(or 000.000.000.000 for DHCP)"));
-        state = IPState;
-   }  
- 
-   void IP(String readString) {
+   void read_ip(String readString) {
        int i;
-       for(i=0;i<4;i++){
-        ip[i] = readString.substring(i*4,i*4+3).toInt();
+       for (i = 0; i < 4; i++) {
+           ip[i] = readString.substring(i * 4, i * 4 + 3).toInt();
        }
-        setMenuState();
-    }
-    
-        
-   void setServerState() {
-        Serial.print (F("Enter server IP: (nnn.nnn.nnn.nnn)"));
-        state = serverState;
-   }  
+       show_menu();
+   }
  
-   void server_State(String readString) {
+   void read_server(String readString) {
        int i;
        for(i=0;i<4;i++){
         server[i] = readString.substring(i*4,i*4+3).toInt();
        }
-        setMenuState();
+       show_menu();
     }
-
-    void setPortState() {
-        Serial.print (F("Enter server port: "));
-        state = portState;
-   } 
-    
-   void port_State(String readString){
-       port = readString.toInt();
-       setMenuState();
-   } 
-    
-   void setMACState() {
-        Serial.print (F("Enter MAC: (HH:HH:HH:HH:HH:HH)"));
-        state = MACState;
-   }  
  
-   void MAC(String readString) {
+   void read_mac(String readString) {
         char aux[3];
         int i;
         for(i=0;i<6;i++) {
             readString.substring(i*3,i*3+2).toCharArray(aux,3);
             mac[i] = strtol(aux, 0, 16);
         }
-
-        setMenuState();
+        show_menu();
     } 
     
-    void loop(){
+    void loop() {
         static String readString("");
         if (Serial.available() > 0) {
             char read = Serial.read();
             Serial.print(read);
 
-            if(read == 13){
+            if (read == 13) {
                 Serial.println();
                 switch (state) {
-                    case menuState:
-                       menu(readString);
-                       break;
-                    case initialState:
-                       initial(readString);
-                       break;
-                    case PLCTopicState:
-                       PLCTopic(readString);
-                       break;
-                    case MACState:
-                       MAC(readString);
-                       break;
-                    case IPState:
-                       IP(readString);
-                       break;
-                    case serverState:
-                       server_State(readString);
-                       break;
-                    case portState:
-                       port_State(readString);
-                       break;
-                    case rootTopicState:
-                       rootTopic(readString);
-                       break;
-                    case commandTopicState:
-                       commandTopic(readString);
-                       break;
-                    case stateTopicState:
-                       stateTopic(readString);
-                       break;
-                    case logTopicState:
-                       logTopic(readString);
-                       break;
-                    case modbusAddressState:
-					   modbusAddress(readString);
-					   break;
-                    case modbusCountState:
-					   modbusCount(readString);
-					   break;
-                    case usernameState:
-					   user(readString);
-					   break;
-                    case passwordState:
-					   pass(readString);
-					   break;
-                   default:
-                        setInitialState();
-                        break;
+                case menuState:
+                    menu_action(readString);
+                    break;
+                case initialState:
+                    initial(readString);
+                    break;
+                case PLCTopicState:
+                    readString.toCharArray(PLC_Topic, readString.length() + 1);
+                    show_menu();
+                    break;
+                case MACState:
+                    read_mac(readString);
+                    break;
+                case IPState:
+                    read_ip(readString);
+                    break;
+                case serverState:
+                    read_server(readString);
+                    break;
+                case portState:
+                    port = readString.toInt();
+                    show_menu();
+                    break;
+                case rootTopicState:
+                    readString.toCharArray(root_Topic, readString.length() + 1);
+                    show_menu();
+                    break;
+                case commandTopicState:
+                    readString.toCharArray(command_Topic, readString.length() + 1);
+                    show_menu();
+                    break;
+                case stateTopicState:
+                    readString.toCharArray(state_Topic, readString.length() + 1);
+                    show_menu();
+                    break;
+                case logTopicState:
+                    readString.toCharArray(log_Topic, readString.length() + 1);
+                    show_menu();
+                    break;
+                case modbusAddressState:
+                    modbus_address = readString.toInt();
+                    show_menu();
+                    break;
+                case modbusCountState:
+                    modbus_count = readString.toInt();
+                    show_menu();
+                    break;
+                case usernameState:
+                    readString.toCharArray(username, readString.length() + 1);
+                    show_menu();
+                    break;
+                case passwordState:
+                    readString.toCharArray(password, readString.length() + 1);
+                    show_menu();
+                    break;
+                default:
+                    initial_state();
+                    break;
                 }
-                
-                readString="";
+
+                readString = "";
                 Serial.print(">");
             } else {
-                 readString += read;
+                readString += read;
             }
-            
+
         }
     }
-   
 }
