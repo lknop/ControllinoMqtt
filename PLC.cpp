@@ -294,13 +294,16 @@ int PLC::getValue(byte* payload, unsigned int length) {
         return HIGH;
     } else if (length==3 && payload[0] == 'O' && payload[1] == 'F' && payload[2] == 'F') {
         return LOW;
-    } else if (length==4) {
-        char num[5];
+    } else {
+        for (uint16_t i=0; i<length; i++) {
+            if (!isdigit(payload[i])) {
+                DEBUG_PRINT("Command ignored");
+                return INVALID_VALUE;
+            }
+        }
+        char num[length+1];
         memcpy(num, payload, length);
-        num[length] = 0;
-        return strtoul(num, NULL, 16);
-    } else  {
-       DEBUG_PRINT("Command ignored");
-       return INVALID_VALUE;
+        num[length] = '\0';
+        return strtoul(num, NULL, 10);
     }
 }
