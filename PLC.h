@@ -48,7 +48,7 @@ class PLC {
         static void runDiscovery();
         static void log(const char* errorMsg);
         static void onMQTTMessage(char* topic, byte* payload, unsigned int length) ;
-        static void onInputChange(char* name, uint8_t value);
+        static void onInputChange(const char* name, uint8_t value);
         static bool getOuput(char* topic,char* ouput);
         static void updateOutput(char* outputName,int newState);
         static int getValue(byte* payload, unsigned int length);

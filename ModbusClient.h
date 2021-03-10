@@ -21,7 +21,7 @@
 #define MODBUS_SIZE 16
 
 #ifndef INPUT_CALLBACK_SIGNATURE
-#define INPUT_CALLBACK_SIGNATURE void (*publish_callback)(char*, uint8_t)
+#define INPUT_CALLBACK_SIGNATURE void (*publish_callback)(const char*, uint8_t)
 #endif
 
 

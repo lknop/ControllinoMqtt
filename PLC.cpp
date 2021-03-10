@@ -199,7 +199,7 @@ void PLC::log(const char* errorMsg)
     }
 }
 
-void PLC::onInputChange(char* name, uint8_t value) {
+void PLC::onInputChange(const char* name, uint8_t value) {
     PLC::publish(name, Configuration::state_Topic, value ? ONSTATE : OFFSTATE);
 }
 

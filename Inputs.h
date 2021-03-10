@@ -16,7 +16,7 @@
 #define INPUT_COUNT 19
 
 #ifndef INPUT_CALLBACK_SIGNATURE
-#define INPUT_CALLBACK_SIGNATURE void (*publish_callback)(char*, uint8_t)
+#define INPUT_CALLBACK_SIGNATURE void (*publish_callback)(const char*, uint8_t)
 #endif
 
 class Inputs {
