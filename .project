@@ -42,11 +42,6 @@
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/CONTROLLINO_Boards/hardware/avr/3.1.0/variants/Controllino_mega</locationURI>
 		</link>
 		<link>
-			<name>libraries/ArduinoSTL</name>
-			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/ArduinoSTL/1.1.0</locationURI>
-		</link>
-		<link>
 			<name>libraries/Button</name>
 			<type>2</type>
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/Button/1.0.0</locationURI>

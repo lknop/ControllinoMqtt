@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <ArduinoSTL.h>
+
 #include <EEPROM.h>
 #include <avr/wdt.h>
 #include <Controllino.h>
