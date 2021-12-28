@@ -2,9 +2,6 @@
 #define DEBUGUTILS_H
 
 #include <Arduino.h>
-#include <ArduinoSTL.h>
-
-
 
 
 #define TRACE(type, str)    \

@@ -692,8 +692,6 @@ int8_t Modbus::getRxBuffer()
  */
 void Modbus::sendTxBuffer()
 {
-    uint8_t i = 0;
-
     // append CRC to message
     uint16_t u16crc = calcCRC( u8BufferSize );
     au8Buffer[ u8BufferSize ] = u16crc >> 8;
@@ -957,7 +955,7 @@ void Modbus::buildException( uint8_t u8exception )
  */
 void Modbus::get_FC1()
 {
-     uint8_t u8byte, i, maxI;
+    uint8_t u8byte, i;
     u8byte = 3;
      for (i=0; i< au8Buffer[2]; i++) {
 
@@ -1204,7 +1202,6 @@ int8_t Modbus::process_FC15( uint16_t *regs, uint8_t u8size )
  */
 int8_t Modbus::process_FC16( uint16_t *regs, uint8_t u8size )
 {
-    uint8_t u8func = au8Buffer[ FUNC ];  // get the original FUNC code
     uint8_t u8StartAdd = au8Buffer[ ADD_HI ] << 8 | au8Buffer[ ADD_LO ];
     uint8_t u8regsno = au8Buffer[ NB_HI ] << 8 | au8Buffer[ NB_LO ];
     uint8_t u8CopyBufferSize;
